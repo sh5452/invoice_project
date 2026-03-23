@@ -1,0 +1,7 @@
+CREATE TABLE deliverty_notes(
+id SERIAL PRIMARY KEY,
+order_id INTEGER REFERENCES orders(id),
+file_url TEXT,
+status VARCHAR(50),
+created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
