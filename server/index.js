@@ -18,6 +18,23 @@ res.status(500).send('DataBase error')
    
 })
 
+app.post('/orders',async (req,res)=>{
+    try{
+        const {order_number,customer_name,customer_phone,customer_address}=req.body
+        const result=await pool.query(
+            `INSERT INTO orders(order_number,customer_name, customer_phone, customer_address)
+            VALUES($1,$2,$3,$4)
+            REURNING *`
+            [order_number,customer_name,customer_phone,customer_address]
+            
+        )
+        res.json(result.row(0))
+    }catch(err){
+        console.error(err)
+        res.status(500).send('Error creating order')
+    }
+})
+
 app.listen(5000,()=>{
     console.log("Srever is running in port 5000")
 })
