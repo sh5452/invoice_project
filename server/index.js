@@ -36,6 +36,16 @@ app.post('/orders', async (req, res) => {
   }
 })
 
+app.get('/orders', async (req,res)=>{
+    try{
+        const result=await pool.query('SELECT * FROM orders')
+        res.json(result.rows)
+    }catch(err){
+        console.error(err)
+        res.status(500).send('Error fetching orders')
+    }
+})
+
 app.listen(5000,()=>{
     console.log("Srever is running in port 5000")
 })
