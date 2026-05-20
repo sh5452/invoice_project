@@ -64,6 +64,34 @@ app.post('/order-items', async (req, res) => {
   }
 })
 
+app.get('/orders/:id',async(req,res)=>{
+    try{
+        const{id}=req.params
+        const result=await pool.query(
+            `SELECT orders.id AS order_id,
+            orders.order_number,
+            orders.customer_name,
+            orders.customer_phone,
+            orders.customer_address,
+            order_items.product_name,
+            order_items.quantity,
+            order_items.price
+            
+            FROM orders
+            
+            JOIN order_items
+            ON orders.id=order_items.order_id
+            WHERE orders.id=$1`
+            ,
+            [id]
+        )
+        res.json(result.rows)
+    }catch(err){
+        console.error(err)
+        res.status(500).fetch('Error fetching order')
+    }
+})
+
 app.listen(5000,()=>{
     console.log("Srever is running in port 5000")
 })
