@@ -85,7 +85,22 @@ app.get('/orders/:id',async(req,res)=>{
             ,
             [id]
         )
-        res.json(result.rows)
+       const order={
+        id: result.rows[0].order_id,
+        order_number: result.rows[0].order_id,
+        customer_name: result.rows[0].customer_name,
+        customer_phone:result.rows[0].customer_phone,
+        customer_address:result.rows[0].customer_address
+       }
+       const items=result.rows.map(item=>({
+        product_name:item.product_name,
+        quantity:item.quantity,
+        price:item.price
+       }))
+       res.json({
+        order,
+        items
+       })
     }catch(err){
         console.error(err)
         res.status(500).fetch('Error fetching order')
