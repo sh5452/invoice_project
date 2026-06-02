@@ -20,13 +20,13 @@ res.status(500).send('DataBase error')
 
 app.post('/orders', async (req, res) => {
   try {
-    const { order_number, customer_name, customer_phone, customer_address } = req.body
+    const { order_number, customer_name, customer_phone, customer_address,status } = req.body
 
     const result = await pool.query(
-      `INSERT INTO orders (order_number, customer_name, customer_phone, customer_address)
-       VALUES ($1, $2, $3, $4)
+      `INSERT INTO orders (order_number, customer_name, customer_phone, customer_address,status)
+       VALUES ($1, $2, $3, $4, $5)
        RETURNING *`,
-      [order_number, customer_name, customer_phone, customer_address]
+      [order_number, customer_name, customer_phone, customer_address,status]
     )
 
     res.json(result.rows[0])
@@ -63,6 +63,36 @@ app.post('/order-items', async (req, res) => {
     res.status(500).send('Error adding item')
   }
 })
+app.patch('/orders/:id/status',async(req,res)=>{
+  try{
+    const {id}=req.params
+    const {status}=req.body
+    const validStatuses=[
+      'חדשה',
+      'בטיפול',
+      'מחכה למלאי',
+      'נשלחה',
+      'סופקה'
+    ]
+   if(!validStatuses.includes(status)){
+    return res.status(500).send('invalid status')
+   }
+    const result=await pool.query(
+      `
+      UPDATE orders SET status=$1
+      WHERE id=$2
+      RETURNING *
+      `
+     ,
+    [status,id] 
+    )
+    res.json(result.rows[0])
+  }
+  catch(err){
+    console.error(err)
+    res.status(500).send('Error updating status')
+  }
+})
 
 app.get('/orders/:id',async(req,res)=>{
     try{
@@ -73,6 +103,7 @@ app.get('/orders/:id',async(req,res)=>{
             orders.customer_name,
             orders.customer_phone,
             orders.customer_address,
+            orders.status,
             order_items.product_name,
             order_items.quantity,
             order_items.price
@@ -87,10 +118,11 @@ app.get('/orders/:id',async(req,res)=>{
         )
        const order={
         id: result.rows[0].order_id,
-        order_number: result.rows[0].order_id,
+        order_number: result.rows[0].order_number,
         customer_name: result.rows[0].customer_name,
         customer_phone:result.rows[0].customer_phone,
-        customer_address:result.rows[0].customer_address
+        customer_address:result.rows[0].customer_address,
+        status:result.rows[0].status
        }
        const items=result.rows.map(item=>({
         product_name:item.product_name,
