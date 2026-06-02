@@ -107,6 +107,23 @@ app.get('/orders/:id',async(req,res)=>{
     }
 })
 
+app.put('/order-items/:id', async(req,res)=>{
+  const {id}=req.params
+  const {quantity}=req.body
+  const result=await pool.query(
+    `
+    UPDATE order_items
+    SET quantity =$1
+    WHERE id=$2
+    RETURNING
+    *
+    `
+    ,
+    [quantity,id]
+  )
+  res.json(result.rows[0])
+})
+
 app.listen(5000,()=>{
     console.log("Srever is running in port 5000")
 })
