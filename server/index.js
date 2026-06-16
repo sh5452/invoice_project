@@ -63,6 +63,43 @@ app.post('/order-items', async (req, res) => {
     res.status(500).send('Error adding item')
   }
 })
+
+app.post('/delivery-notes',async(req,res)=>{
+  try{
+    const{
+      order_id,
+      delivery_note_number,
+      received_by,
+      notes
+    }=req.body
+    const result=await pool.query(
+      `
+      INSERT INTO delivery_notes(
+      order_id,
+      delivery_note_number,
+      delivery_at,
+      received_by,
+      notes
+
+      )
+      VALUES($1,$2,NOW(),$3,$4)
+      RETURNING *
+      `
+      ,
+      [order_id,
+        delivery_note_number,
+        received_by,
+        notes
+
+      ]
+
+    )
+    res.json(result.rows[0])
+  }catch(err){
+    console.error(err)
+    res.status(500).send('ERROR creating delivery notes')
+  }
+})
 app.patch('/orders/:id/status',async(req,res)=>{
   try{
     const {id}=req.params
@@ -98,21 +135,34 @@ app.get('/orders/:id',async(req,res)=>{
     try{
         const{id}=req.params
         const result=await pool.query(
-            `SELECT orders.id AS order_id,
-            orders.order_number,
-            orders.customer_name,
-            orders.customer_phone,
-            orders.customer_address,
-            orders.status,
-            order_items.product_name,
-            order_items.quantity,
-            order_items.price
+            `SELECT
+    orders.id AS order_id,
+    orders.order_number,
+    orders.customer_name,
+    orders.customer_phone,
+    orders.customer_address,
+    orders.status,
+
+    order_items.product_name,
+    order_items.quantity,
+    order_items.price,
+
+    delivery_notes.delivery_note_number,
+    delivery_notes.received_by,
+    delivery_notes.delivery_at
+
+FROM orders
+
+JOIN order_items
+ON orders.id = order_items.order_id
+
+LEFT JOIN delivery_notes
+ON orders.id = delivery_notes.order_id
+
+WHERE orders.id = $1
+            `
+
             
-            FROM orders
-            
-            JOIN order_items
-            ON orders.id=order_items.order_id
-            WHERE orders.id=$1`
             ,
             [id]
         )
@@ -129,14 +179,59 @@ app.get('/orders/:id',async(req,res)=>{
         quantity:item.quantity,
         price:item.price
        }))
+
+       const delivery_note=
+       {
+        delivery_note_number:
+        result.rows[0].delivery_note_number,
+        received_by:
+        result.rows[0].received_by,
+        delivery_at:
+        result.rows[0].delivery_at
+       }
        res.json({
         order,
-        items
+        items,
+        delivery_note
        })
     }catch(err){
         console.error(err)
-        res.status(500).fetch('Error fetching order')
+        res.status(500).send('Error fetching order')
     }
+})
+app.get('/delivery-notes', async(req,res)=>{
+  try{
+
+    const result = await pool.query(
+      `
+      SELECT *
+      FROM delivery_notes
+      `
+    )
+
+    res.json(result.rows)
+
+  }catch(err){
+    console.error(err)
+    res.status(500).send('Error fetching delivery notes')
+  }
+})
+
+app.get('/delivery-notes/:id',async(req, res)=>{
+  try{
+const {id}= req.params
+const result=await pool.query(`
+  SELECT * 
+  FROM delivery_notes
+  WHERE id=$1
+  `,
+[id])
+res.json(result.rows[0])
+  }
+  catch(err){
+    console.error(err)
+    res.status(500).send('ERROR fetching delivery note')
+  }
 })
 
 app.put('/order-items/:id', async(req,res)=>{
