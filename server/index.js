@@ -149,7 +149,11 @@ app.get('/orders/:id',async(req,res)=>{
 
     delivery_notes.delivery_note_number,
     delivery_notes.received_by,
-    delivery_notes.delivery_at
+    delivery_notes.delivery_at,
+    
+    returns.id AS return_id,
+    returns.reason,
+    returns.created_at
 
 FROM orders
 
@@ -158,6 +162,9 @@ ON orders.id = order_items.order_id
 
 LEFT JOIN delivery_notes
 ON orders.id = delivery_notes.order_id
+
+LEFT JOIN returns
+ON orders.id=returns.order_id
 
 WHERE orders.id = $1
             `
@@ -189,10 +196,19 @@ WHERE orders.id = $1
         delivery_at:
         result.rows[0].delivery_at
        }
+       const return_info=
+       result.rows[0].return_id
+       ?{
+        id:result.rows[0].return_id,
+        reason:result.rows[0].reason,
+        created_at:result.rows[0].created_at
+       }:
+       null
        res.json({
         order,
         items,
-        delivery_note
+        delivery_note,
+        return_info
        })
     }catch(err){
         console.error(err)
@@ -249,6 +265,28 @@ app.put('/order-items/:id', async(req,res)=>{
     [quantity,id]
   )
   res.json(result.rows[0])
+})
+
+app.post('/returns',async(req,res)=>{
+  try{
+    const {order_id,reason}=req.body
+    const result=await pool.query(
+      `
+      INSERT INTO returns(
+      order_id,
+      reason
+      )
+      VALUES($1,$2)
+      RETURNING *
+      
+      `,
+      [order_id,reason]
+
+    )
+    res.json(result.rows[0])
+  }catch(err){
+    console.error(500).send('ERROR creating returns')
+  }
 })
 
 app.listen(5000,()=>{
