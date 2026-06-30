@@ -289,6 +289,29 @@ app.post('/returns',async(req,res)=>{
   }
 })
 
+app.post('/return-items', async(req,res)=>{
+  try{
+const {return_id, order_item_id,quantity_returned}=req.body
+const result = await pool.query(
+  `
+  INSERT INTO return_items (
+    return_id,
+    order_item_id,
+    quantity_returned
+  )
+  VALUES ($1, $2, $3)
+  RETURNING *
+  `,
+  [return_id, order_item_id, quantity_returned]
+)
+res.json(result.rows[0])
+  }catch (err) {
+    console.error(err)
+    res.status(500).send('ERROR creating return item')
+  }
+  
+})
+
 app.listen(5000,()=>{
     console.log("Srever is running in port 5000")
 })
