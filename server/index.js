@@ -153,7 +153,14 @@ app.get('/orders/:id',async(req,res)=>{
     
     returns.id AS return_id,
     returns.reason,
-    returns.created_at
+    returns.created_at,
+
+    returned_item.product_name AS returned_product,
+    returned_item.sku,
+
+    return_items.id AS return_items_id,
+    return_items.quantity_returned
+    
 
 FROM orders
 
@@ -165,6 +172,12 @@ ON orders.id = delivery_notes.order_id
 
 LEFT JOIN returns
 ON orders.id=returns.order_id
+
+LEFT JOIN return_items
+ON returns.id=return_items.return_id
+
+LEFT JOIN order_items returned_items
+ON return_items.order_item_id=returned_items.id
 
 WHERE orders.id = $1
             `
@@ -196,19 +209,29 @@ WHERE orders.id = $1
         delivery_at:
         result.rows[0].delivery_at
        }
+
+       const returned_items=result.rows
+       .filter(row=>row.return_item_id)
+       .map(row=>({
+        product_name:row.returned_product,
+        sku:row.sku,
+        quantity_returned: row.quantity_returned
+       }))
        const return_info=
        result.rows[0].return_id
        ?{
         id:result.rows[0].return_id,
         reason:result.rows[0].reason,
-        created_at:result.rows[0].created_at
+        created_at:result.rows[0].created_at,
+        items:returned_items
        }:
        null
        res.json({
         order,
         items,
         delivery_note,
-        return_info
+        return_info,
+        order_items
        })
     }catch(err){
         console.error(err)
