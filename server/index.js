@@ -176,8 +176,8 @@ ON orders.id=returns.order_id
 LEFT JOIN return_items
 ON returns.id=return_items.return_id
 
-LEFT JOIN order_items returned_items
-ON return_items.order_item_id=returned_items.id
+LEFT JOIN returns
+ON returns.id = return_items.return_id
 
 WHERE orders.id = $1
             `
