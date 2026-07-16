@@ -159,7 +159,10 @@ app.get('/orders/:id',async(req,res)=>{
     returned_item.sku,
 
     return_items.id AS return_items_id,
-    return_items.quantity_returned
+    return_items.quantity_returned,
+
+    returns.reason,
+    returns.created_at
     
 
 FROM orders
