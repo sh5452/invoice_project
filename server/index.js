@@ -216,7 +216,7 @@ WHERE orders.id = $1
        const returned_items=result.rows
        .filter(row=>row.return_item_id)
        .map(row=>({
-        product_name:row.returned_product,
+        product_name:row.product_name,
         sku:row.sku,
         quantity_returned: row.quantity_returned
        }))
