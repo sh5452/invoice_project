@@ -146,24 +146,22 @@ app.get('/orders/:id',async(req,res)=>{
     order_items.product_name,
     order_items.quantity,
     order_items.price,
+    order_items.sku,
 
     delivery_notes.delivery_note_number,
     delivery_notes.received_by,
     delivery_notes.delivery_at,
     
-    returns.id AS return_id,
-    returns.reason,
-    returns.created_at,
-
-    returned_item.product_name AS returned_product,
-    returned_item.sku,
-
-    return_items.id AS return_items_id,
-    return_items.quantity_returned,
-
-    returns.reason,
-    returns.created_at
     
+
+
+return_items.id AS return_item_id,
+return_items.quantity_returned,
+
+returns.id AS return_id,
+returns.reason,
+returns.created_at
+
 
 FROM orders
 
@@ -177,10 +175,7 @@ LEFT JOIN returns
 ON orders.id=returns.order_id
 
 LEFT JOIN return_items
-ON returns.id=return_items.return_id
-
-LEFT JOIN returns
-ON returns.id = return_items.return_id
+ON return_items.order_item_id = order_items.id
 
 WHERE orders.id = $1
             `
@@ -189,8 +184,12 @@ WHERE orders.id = $1
             ,
             [id]
         )
+        if (result.rows.length === 0) {
+    return res.status(404).send('Order not found');
+}
        const order={
         id: result.rows[0].order_id,
+        
         order_number: result.rows[0].order_number,
         customer_name: result.rows[0].customer_name,
         customer_phone:result.rows[0].customer_phone,
@@ -200,7 +199,9 @@ WHERE orders.id = $1
        const items=result.rows.map(item=>({
         product_name:item.product_name,
         quantity:item.quantity,
-        price:item.price
+        price:item.price,
+        sku: item.sku,
+quantity_returned: item.quantity_returned
        }))
 
        const delivery_note=
@@ -234,7 +235,8 @@ WHERE orders.id = $1
         items,
         delivery_note,
         return_info,
-        order_items
+        returned_items
+        
        })
     }catch(err){
         console.error(err)
