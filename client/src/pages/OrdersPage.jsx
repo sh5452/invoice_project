@@ -22,9 +22,15 @@ function OrdersPage(){
             <h1>רשימת הזמנות</h1>
             {
                 orders.map((order)=>{
+                    return(
                   <div  key={order.id}>
-                    <OrderCard order={order}></OrderCard>
+                    
+                      <OrderCard myOrder={order}></OrderCard>  
+                    
+                         
+                   
                   </div>
+                    )
                 })
             }
 
