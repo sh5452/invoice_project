@@ -1,20 +1,37 @@
-import OrderCard from '../components/OrderCard'
+
 import { useEffect, useState } from 'react'
+import OrderCard from '../components/OrderCard'
 import api from '../services/api'
 
 function OrdersPage(){
-    const [order,setOrder]=usestate([])
+    const [orders,setOrders]=useState([])
     useEffect(()=>{
-loadOrders()
-    },[])
-    async function loadOrders(){
-try{
-    const res= await api.get("/orders");
-    setOrder(res.data);
-}catch(err){
-    console.error(err)
-}
+        loadOrders();
+    },
+[]);
+  async function loadOrders(){
+        try{
+            const res= await api.get('/orders')
+            setOrders(res.data);
+        }catch(err){
+            console.error(err);
+        }
     }
+    return(
+        <div>
+            <h1>רשימת הזמנות</h1>
+            {
+                orders.map((order)=>{
+                  <div  key={order.id}>
+                    <OrderCard order={order}></OrderCard>
+                  </div>
+                })
+            }
+
+
+        </div>
+
+    )
 }
-<OrderCard order={order}></OrderCard>
+
 export default OrdersPage

@@ -1,9 +1,6 @@
 import { useState } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import OrdersList from './pages/OrdersList'
-import OrdersPage from './pages/OrdersPage'
 import OrderDetails from './pages/OrderDetails'
-
 import './App.css'
 import OrdersPage from './pages/OrdersPage'
 
