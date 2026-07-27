@@ -24,11 +24,7 @@ function OrdersPage(){
                 orders.map((order)=>{
                     return(
                   <div  key={order.id}>
-                    
                       <OrderCard myOrder={order}></OrderCard>  
-                    
-                         
-                   
                   </div>
                     )
                 })
