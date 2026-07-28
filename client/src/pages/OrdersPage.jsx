@@ -30,7 +30,7 @@ function OrdersPage(){
                     )
                 })
             }
-            <Link to="/orders/new">
+            <Link className="primary-button"  to="/orders/new">
     הוסף הזמנה חדשה
 </Link>
 

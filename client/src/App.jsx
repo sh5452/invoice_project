@@ -9,7 +9,7 @@ function App() {
  return(
   <BrowserRouter>
   <div style={{padding:'20px'}}>
-<h1>Orders System</h1>
+<h1 className="main-title">Orders System</h1>
 <Routes>
  
 <Route path='/' element={<OrdersPage/>}/>
