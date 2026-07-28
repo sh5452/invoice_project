@@ -81,17 +81,42 @@ items.map((item,index)=>(
 <div key={index}>
 
 <select
-value={item.quantity}
+value={item.product_name}
+onChange={(e)=>handleProductChange(index,e.target.value)}
 >
+<option value="">בחר מוצר</option>
+
+{
+products.map(product=>(
+<option 
+key={product.sku}
+value={product.name}
+>
+{product.name}
+</option>
+))
+}
+
+</select>
+<select
+value={item.quantity}
+onChange={(e)=>{
+const updatedItems=[...items];
+updatedItems[index].quantity=e.target.value;
+setItems(updatedItems);
+}}
+>
+
 {
 item.packSize &&
 createQuantityOptions(item.packSize)
 .map(q=>(
-<option key={q}>
+<option key={q} value={q}>
 {q}
 </option>
 ))
 }
+
 </select>
 
 <p>מק"ט: {item.sku}</p>

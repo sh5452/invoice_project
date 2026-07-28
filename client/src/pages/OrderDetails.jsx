@@ -72,4 +72,4 @@ return(
 </div>
 )
 }
-export default OrderDetails
+export default OrderDetails;
