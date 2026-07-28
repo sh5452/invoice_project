@@ -134,6 +134,8 @@ app.patch('/orders/:id/status',async(req,res)=>{
 app.get('/orders/:id',async(req,res)=>{
     try{
         const{id}=req.params
+        const db = await pool.query('SELECT current_database(), current_schema()');
+        console.log("DATABASE:", db.rows);
         const result=await pool.query(
             `SELECT
     orders.id AS order_id,
@@ -165,7 +167,7 @@ returns.created_at
 
 FROM orders
 
-JOIN order_items
+LEFT JOIN order_items
 ON orders.id = order_items.order_id
 
 LEFT JOIN delivery_notes
@@ -184,6 +186,10 @@ WHERE orders.id = $1
             ,
             [id]
         )
+         console.log("ROWS COUNT:", result.rows.length)
+        console.log(result.rows)
+        console.log("id from url:", id);
+console.log("result:", result.rows);
         if (result.rows.length === 0) {
     return res.status(404).send('Order not found');
 }
