@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import OrderCard from '../components/OrderCard'
 import api from '../services/api'
+import { Link } from 'react-router-dom'
 
 function OrdersPage(){
     const [orders,setOrders]=useState([])
@@ -29,6 +30,9 @@ function OrdersPage(){
                     )
                 })
             }
+            <Link to="/orders/new">
+    הוסף הזמנה חדשה
+</Link>
 
 
         </div>

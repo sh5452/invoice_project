@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import OrderDetails from './pages/OrderDetails'
 import './App.css'
 import OrdersPage from './pages/OrdersPage'
+import CreateOrder from './pages/CreateOrder'
 
 function App() {
  return(
@@ -13,6 +14,7 @@ function App() {
  
 <Route path='/' element={<OrdersPage/>}/>
 <Route path='/orders/:id' element={<OrderDetails/>}/>
+<Route path='/orders/new' element={<CreateOrder/>}/>
   
 </Routes>
   </div>
