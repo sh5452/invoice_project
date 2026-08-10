@@ -7,7 +7,8 @@ import Navbar from "./components/Navbar";
 import './App.css'
 import OrdersPage from './pages/OrdersPage'
 import CreateOrder from './pages/CreateOrder'
-
+import AddUserPage from './pages/AddUserPage';
+import LoginPage from "./pages/LoginPage";
 
 
 function App() {
@@ -16,13 +17,17 @@ function App() {
   <div style={{padding:'20px'}}>
     <Navbar />
 <Routes>
-<Route path="/" element={<HomePage/>}/>
+<Route path="/" element={<LoginPage />} />
+
+<Route path="/home" element={<HomePage/>}/>
 
 <Route path="/orders" element={<OrdersPage/>}/>
 
 <Route path="/orders/new" element={<CreateOrder/>}/>
 
 <Route path="/orders/:id" element={<OrderDetails/>}/>
+
+<Route path='/add-user'element={<AddUserPage />}/>
   
 </Routes>
   </div>

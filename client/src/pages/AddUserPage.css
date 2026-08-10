@@ -1,0 +1,36 @@
+.add-user-page {
+    width: 500px;
+    margin: 50px auto;
+    color: white;
+}
+
+.add-user-page h1 {
+    margin-bottom: 30px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    margin-bottom: 8px;
+    font-weight: bold;
+}
+
+.form-group input,
+.form-group select {
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #475569;
+    font-size: 16px;
+}
+
+.add-user-page button {
+    padding: 12px 25px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+}
