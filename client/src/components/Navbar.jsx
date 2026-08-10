@@ -17,13 +17,13 @@ function Navbar() {
 
             <div className="menu">
 
-                <Link to="/">ראשי</Link>
+                <Link to="/home">ראשי</Link>
 
                 <Link to="/orders">רשימת הזמנות</Link>
 
                 <Link to="/orders/new">הזמנה חדשה</Link>
 
-                <Link to="/login">התחברות</Link>
+                <Link to="/">התחברות</Link>
 
             </div>
 
