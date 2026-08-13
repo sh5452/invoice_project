@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import './AddUserPage.css';
+import axios from 'axios';
+import { Navigate, useNavigate } from 'react-router-dom';
 
 function AddUserPage() {
+    const navigate=useNavigate()
     const [user,setUser]=useState({
           username: "",
     fullName: "",
@@ -9,10 +12,25 @@ function AddUserPage() {
     company: "",
     role: ""
     })
-    const handleSubmit = (e) => {
+const handleSubmit = async (e) => {
     e.preventDefault();
 
-    console.log(user);
+    try {
+
+        const response = await axios.post(
+            'http://localhost:5000/users',
+            user
+        );
+
+        console.log(response.data);
+         navigate('/users');
+
+    } catch (err) {
+
+        console.error(err);
+        alert('שגיאה בהוספת משתמש');
+
+    }
 };
 
     return (
@@ -66,7 +84,7 @@ function AddUserPage() {
 
                 </div>
 
-                <button type="submit" >
+                <button type="submit"  >
                     הוסף משתמש
                 </button>
 

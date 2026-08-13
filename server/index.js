@@ -46,6 +46,87 @@ app.get('/orders', async (req,res)=>{
     }
 })
 
+app.get('/users', async (req, res) => {
+    try {
+
+        const result = await pool.query(
+            `SELECT *
+             FROM users
+             ORDER BY created_at DESC`
+        )
+
+        res.json(result.rows)
+
+    } catch (err) {
+
+        console.error(err)
+        res.status(500).send('Error fetching users')
+
+    }
+})
+app.put('/users/:id', async (req, res) => {
+    try {
+
+        const { id } = req.params
+
+        const {
+            username,
+            fullName,
+            email,
+            company,
+            role
+        } = req.body
+
+        const result = await pool.query(
+            `UPDATE users
+             SET username = $1,
+                 full_name = $2,
+                 email = $3,
+                 company = $4,
+                 role = $5
+             WHERE id = $6
+             RETURNING *`,
+            [username, fullName, email, company, role, id]
+        )
+
+        if (result.rows.length === 0) {
+            return res.status(404).send('User not found')
+        }
+
+        res.json(result.rows[0])
+
+    } catch (err) {
+
+        console.error(err)
+        res.status(500).send('Error updating user')
+    }
+})
+
+app.delete('/users/:id', async (req, res) => {
+    try {
+
+        const { id } = req.params
+
+        const result = await pool.query(
+            `DELETE FROM users
+             WHERE id = $1
+             RETURNING *`,
+            [id]
+        )
+
+        if (result.rows.length === 0) {
+            return res.status(404).send('User not found')
+        }
+
+        res.json(result.rows[0])
+
+    } catch (err) {
+
+        console.error(err)
+        res.status(500).send('Error deleting user')
+    }
+})
+
 app.post('/order-items', async (req, res) => {
   try {
     const { order_id, product_name, sku, quantity, unit_type, price } = req.body
@@ -62,6 +143,34 @@ app.post('/order-items', async (req, res) => {
     console.error(err)
     res.status(500).send('Error adding item')
   }
+})
+app.post('/users', async (req, res) => {
+    try {
+
+        const {
+            username,
+            fullName,
+            email,
+            company,
+            role
+        } = req.body
+
+        const result = await pool.query(
+            `INSERT INTO users
+            (username, full_name, email, company, role)
+            VALUES ($1, $2, $3, $4, $5)
+            RETURNING *`,
+            [username, fullName, email, company, role]
+        )
+
+        res.json(result.rows[0])
+
+    } catch (err) {
+
+        console.error(err)
+        res.status(500).send('Error creating user')
+
+    }
 })
 
 app.post('/delivery-notes',async(req,res)=>{

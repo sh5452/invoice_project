@@ -9,7 +9,7 @@ import OrdersPage from './pages/OrdersPage'
 import CreateOrder from './pages/CreateOrder'
 import AddUserPage from './pages/AddUserPage';
 import LoginPage from "./pages/LoginPage";
-
+import UsersPage from './pages/UsersPage';
 
 function App() {
  return(
@@ -28,6 +28,8 @@ function App() {
 <Route path="/orders/:id" element={<OrderDetails/>}/>
 
 <Route path='/add-user'element={<AddUserPage />}/>
+
+<Route path='/users' element={<UsersPage/>}/>
   
 </Routes>
   </div>
