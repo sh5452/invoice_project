@@ -46,6 +46,36 @@ app.get('/orders', async (req,res)=>{
     }
 })
 
+app.post('/users', async (req, res) => {
+    try {
+
+        const {
+            username,
+            fullName,
+            email,
+            company,
+            role
+        } = req.body
+
+        const result = await pool.query(
+            `INSERT INTO users
+            (username, full_name, email, company, role)
+            VALUES ($1, $2, $3, $4, $5)
+            RETURNING *`,
+            [username, fullName, email, company, role]
+        )
+
+        res.json(result.rows[0])
+
+    } catch (err) {
+
+        console.error(err)
+        res.status(500).send('Error creating user')
+
+    }
+})
+
+
 app.get('/users', async (req, res) => {
     try {
 
@@ -102,30 +132,32 @@ app.put('/users/:id', async (req, res) => {
     }
 })
 
-app.delete('/users/:id', async (req, res) => {
+app.patch('/users/:id/deactivate', async (req, res) => {
     try {
 
-        const { id } = req.params
+        const { id } = req.params;
 
         const result = await pool.query(
-            `DELETE FROM users
+            `UPDATE users
+             SET is_active = FALSE
              WHERE id = $1
              RETURNING *`,
             [id]
-        )
+        );
 
         if (result.rows.length === 0) {
-            return res.status(404).send('User not found')
+            return res.status(404).send('User not found');
         }
 
-        res.json(result.rows[0])
+        res.json(result.rows[0]);
 
     } catch (err) {
 
-        console.error(err)
-        res.status(500).send('Error deleting user')
+        console.error(err);
+        res.status(500).send('Error deactivating user');
+
     }
-})
+});
 
 app.post('/order-items', async (req, res) => {
   try {
@@ -143,34 +175,6 @@ app.post('/order-items', async (req, res) => {
     console.error(err)
     res.status(500).send('Error adding item')
   }
-})
-app.post('/users', async (req, res) => {
-    try {
-
-        const {
-            username,
-            fullName,
-            email,
-            company,
-            role
-        } = req.body
-
-        const result = await pool.query(
-            `INSERT INTO users
-            (username, full_name, email, company, role)
-            VALUES ($1, $2, $3, $4, $5)
-            RETURNING *`,
-            [username, fullName, email, company, role]
-        )
-
-        res.json(result.rows[0])
-
-    } catch (err) {
-
-        console.error(err)
-        res.status(500).send('Error creating user')
-
-    }
 })
 
 app.post('/delivery-notes',async(req,res)=>{

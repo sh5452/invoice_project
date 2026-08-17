@@ -46,30 +46,34 @@ function UsersPage() {
         setEditingUser(null);
     };
 
-    const deleteUser = async (id) => {
+    const deactivateUser = async (id) => {
 
-    const confirmDelete = window.confirm(
-        "האם את בטוחה שברצונך למחוק את המשתמש?"
+    const confirmDeactivate = window.confirm(
+        "האם את בטוחה שברצונך להשבית את המשתמש?"
     );
 
-    if (!confirmDelete) {
+    if (!confirmDeactivate) {
         return;
     }
 
     try {
 
-        await axios.delete(
-            `http://localhost:5000/users/${id}`
+        const response = await axios.patch(
+            `http://localhost:5000/users/${id}/deactivate`
         );
 
         setUsers(
-            users.filter(user => user.id !== id)
+            users.map(user =>
+                user.id === id
+                    ? response.data
+                    : user
+            )
         );
 
     } catch (err) {
 
         console.error(err);
-        alert("שגיאה במחיקת המשתמש");
+        alert("שגיאה בהשבתת המשתמש");
 
     }
 };
@@ -216,9 +220,12 @@ function UsersPage() {
                                 עריכה
                             </button>
 
-                            <button  onClick={() => deleteUser(user.id)}>
-                                מחיקה
+                            <button  onClick={() => deactivateUser(user.id)}>
+                               השבתה
                             </button>
+                            <p>
+    סטטוס: {user.is_active ? "פעיל" : "מושבת"}
+</p>
 
                         </>
                     )}
