@@ -5,5 +5,6 @@ CREATE TABLE orders (
     customer_phone VARCHAR(20),
     customer_address TEXT,
     status VARCHAR(20) DEFAULT 'open',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    is_active BOOLEAN DEFAULT TRUE;
 );

@@ -14,6 +14,8 @@ function OrdersPage(){
         try{
             const res= await api.get('/orders')
             setOrders(res.data);
+            console.log(orders);
+            console.log(res.data);
         }catch(err){
             console.error(err);
         }

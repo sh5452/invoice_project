@@ -36,15 +36,33 @@ app.post('/orders', async (req, res) => {
   }
 })
 
-app.get('/orders', async (req,res)=>{
-    try{
-        const result=await pool.query('SELECT * FROM orders')
+app.get('/orders', async (req, res) => {
+    try {
+
+        const result = await pool.query(`
+            SELECT
+                orders.*,
+                COALESCE(
+                    SUM(order_items.price * order_items.quantity),
+                    0
+                ) AS total_price
+            FROM orders
+            LEFT JOIN order_items
+                ON orders.id = order_items.order_id
+            GROUP BY orders.id
+            ORDER BY orders.id DESC
+        `)
+
         res.json(result.rows)
-    }catch(err){
+
+    } catch (err) {
+
         console.error(err)
         res.status(500).send('Error fetching orders')
+
     }
 })
+
 
 app.post('/users', async (req, res) => {
     try {
@@ -75,6 +93,48 @@ app.post('/users', async (req, res) => {
     }
 })
 
+app.put('/orders/:id', async (req, res) => {
+    try {
+
+        const { id } = req.params;
+
+        const {
+            order_number,
+            customer_name,
+            customer_phone,
+            customer_address
+        } = req.body;
+
+        const result = await pool.query(
+            `UPDATE orders
+             SET order_number = $1,
+                 customer_name = $2,
+                 customer_phone = $3,
+                 customer_address = $4
+             WHERE id = $5
+             RETURNING *`,
+            [
+                order_number,
+                customer_name,
+                customer_phone,
+                customer_address,
+                id
+            ]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).send('Order not found');
+        }
+
+        res.json(result.rows[0]);
+
+    } catch (err) {
+
+        console.error(err);
+        res.status(500).send('Error updating order');
+
+    }
+});
 
 app.get('/users', async (req, res) => {
     try {
@@ -257,7 +317,9 @@ app.get('/orders/:id',async(req,res)=>{
     orders.customer_phone,
     orders.customer_address,
     orders.status,
+    orders.is_active,
 
+    order_items.id AS order_item_id,
     order_items.product_name,
     order_items.quantity,
     order_items.price,
@@ -313,9 +375,11 @@ console.log("result:", result.rows);
         customer_name: result.rows[0].customer_name,
         customer_phone:result.rows[0].customer_phone,
         customer_address:result.rows[0].customer_address,
-        status:result.rows[0].status
+        status:result.rows[0].status,
+         is_active: result.rows[0].is_active
        }
        const items=result.rows.map(item=>({
+         id: item.order_item_id,
         product_name:item.product_name,
         quantity:item.quantity,
         price:item.price,
@@ -362,6 +426,33 @@ quantity_returned: item.quantity_returned
         res.status(500).send('Error fetching order')
     }
 })
+
+app.patch('/orders/:id/deactivate', async (req, res) => {
+    try {
+
+        const { id } = req.params;
+
+        const result = await pool.query(
+            `UPDATE orders
+             SET is_active = FALSE
+             WHERE id = $1
+             RETURNING *`,
+            [id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).send('Order not found');
+        }
+
+        res.json(result.rows[0]);
+
+    } catch (err) {
+
+        console.error(err);
+        res.status(500).send('Error deactivating order');
+
+    }
+});
 app.get('/delivery-notes', async(req,res)=>{
   try{
 

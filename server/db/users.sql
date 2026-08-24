@@ -5,5 +5,6 @@ CREATE TABLE users (
     email VARCHAR(255) UNIQUE NOT NULL,
     company VARCHAR(150) NOT NULL,
     role VARCHAR(50) NOT NULL,
-    created_at TIMESTAMP DEFAULT NOW()
+    created_at TIMESTAMP DEFAULT NOW(),
+    is_active BOOLEAN DEFAULT TRUE;
 );
