@@ -10,6 +10,7 @@ import CreateOrder from './pages/CreateOrder'
 import AddUserPage from './pages/AddUserPage';
 import LoginPage from "./pages/LoginPage";
 import UsersPage from './pages/UsersPage';
+import DeliveryNotePage from './pages/DeliveryNotePage';
 
 function App() {
  return(
@@ -30,6 +31,8 @@ function App() {
 <Route path='/add-user'element={<AddUserPage />}/>
 
 <Route path='/users' element={<UsersPage/>}/>
+
+<Route path='/delivery-notes/new/:orderId' element={<DeliveryNotePage/>}/>
   
 </Routes>
   </div>

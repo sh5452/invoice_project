@@ -1,0 +1,45 @@
+.delivery-note-page {
+    max-width: 600px;
+    margin: 40px auto;
+    padding: 30px;
+}
+
+.delivery-note-page h1 {
+    text-align: center;
+    margin-bottom: 30px;
+    
+}
+
+
+.delivery-note-page form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.delivery-note-page .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+   
+}
+.delivery-note-page label {
+    color: white !important;
+}
+
+.delivery-note-page input,
+.delivery-note-page textarea {
+    padding: 10px;
+    font-size: 16px;
+}
+
+.delivery-note-page textarea {
+    min-height: 120px;
+    resize: vertical;
+}
+
+.delivery-note-page button {
+    padding: 12px;
+    font-size: 16px;
+    cursor: pointer;
+}

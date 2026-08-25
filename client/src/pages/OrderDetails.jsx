@@ -1,11 +1,11 @@
-import { useParams } from 'react-router-dom';
+
 import { useState, useEffect } from 'react';
 import api from '../services/api';
-
+import { useParams, useNavigate } from 'react-router-dom'
 function OrderDetails() {
 
     const { id } = useParams();
-
+const navigate = useNavigate();
     const [orderData, setOrderData] = useState(null);
     const [isEditing, setIsEditing] = useState(false);
     const [selectedStatus, setSelectedStatus] = useState("");
@@ -209,7 +209,13 @@ function cancelStatusEdit() {
         <button onClick={deactivateOrder}>
             השבת הזמנה
         </button>
-    </>
+   
+                <button
+    onClick={() => navigate(`/delivery-notes/new/${id}`)}
+>
+    הוספת תעודת משלוח
+</button>
+ </>
             )}
 
             {isEditing && (
@@ -447,6 +453,11 @@ function cancelStatusEdit() {
                         התקבל אצל:
                         {orderData.delivery_note.received_by}
                     </p>
+                    <p>
+                        הערות:
+                        {orderData.delivery_note.note}
+                    </p>
+        
                 </>
 
             )}

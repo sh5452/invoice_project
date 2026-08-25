@@ -328,6 +328,7 @@ app.get('/orders/:id',async(req,res)=>{
     delivery_notes.delivery_note_number,
     delivery_notes.received_by,
     delivery_notes.delivery_at,
+    delivery_notes.notes
     
     
 
@@ -394,7 +395,9 @@ quantity_returned: item.quantity_returned
         received_by:
         result.rows[0].received_by,
         delivery_at:
-        result.rows[0].delivery_at
+        result.rows[0].delivery_at,
+        notes:
+        result.rows[0].notes
        }
 
        const returned_items=result.rows
