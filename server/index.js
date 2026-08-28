@@ -328,7 +328,7 @@ app.get('/orders/:id',async(req,res)=>{
     delivery_notes.delivery_note_number,
     delivery_notes.received_by,
     delivery_notes.delivery_at,
-    delivery_notes.notes
+    delivery_notes.notes,
     
     
 
@@ -363,8 +363,17 @@ WHERE orders.id = $1
             [id]
         )
          console.log("ROWS COUNT:", result.rows.length)
-        console.log(result.rows)
-        console.log("id from url:", id);
+console.log(result.rows)
+console.log("id from url:", id)
+
+console.log(
+    "DELIVERY NOTES FROM QUERY:",
+    result.rows.map(row => ({
+        delivery_note_number: row.delivery_note_number,
+        received_by: row.received_by,
+        notes: row.notes
+    }))
+);
 console.log("result:", result.rows);
         if (result.rows.length === 0) {
     return res.status(404).send('Order not found');
@@ -398,7 +407,9 @@ quantity_returned: item.quantity_returned
         result.rows[0].delivery_at,
         notes:
         result.rows[0].notes
+        
        }
+       console.log("DELIVERY NOTE:", delivery_note)
 
        const returned_items=result.rows
        .filter(row=>row.return_item_id)
@@ -422,6 +433,7 @@ quantity_returned: item.quantity_returned
         delivery_note,
         return_info,
         returned_items
+        
         
        })
     }catch(err){

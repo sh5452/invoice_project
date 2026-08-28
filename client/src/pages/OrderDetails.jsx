@@ -22,6 +22,10 @@ const [isEditingStatus, setIsEditingStatus] = useState(false);
             const res = await api.get(`/orders/${id}`);
 
             console.log("SERVER RESPONSE:", res.data);
+           
+console.log("DELIVERY NOTE:", res.data.delivery_note);
+console.log("NOTES:", res.data.delivery_note?.notes);
+
 
             setOrderData(res.data);
             setSelectedStatus(res.data.order.status);
@@ -455,7 +459,7 @@ function cancelStatusEdit() {
                     </p>
                     <p>
                         הערות:
-                        {orderData.delivery_note.note}
+                        {orderData.delivery_note.notes}
                     </p>
         
                 </>
