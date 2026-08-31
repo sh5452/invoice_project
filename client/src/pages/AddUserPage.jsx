@@ -5,13 +5,15 @@ import { Navigate, useNavigate } from 'react-router-dom';
 
 function AddUserPage() {
     const navigate=useNavigate()
-    const [user,setUser]=useState({
-          username: "",
+
+  const [user, setUser] = useState({
+    username: "",
     fullName: "",
     email: "",
     company: "",
-    role: ""
-    })
+    role: "",
+    password: ""
+})
 const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -53,6 +55,20 @@ const handleSubmit = async (e) => {
                         setUser({...user,fullName:e.target.value})
                     }/>
                 </div>
+                <div className="form-group">
+    <label>סיסמה</label>
+
+    <input
+        type="password"
+        value={user.password}
+        onChange={(e) =>
+            setUser({
+                ...user,
+                password: e.target.value
+            })
+        }
+    />
+</div>
 
                 <div className="form-group">
                     <label>כתובת מייל</label>

@@ -6,5 +6,6 @@ CREATE TABLE users (
     company VARCHAR(150) NOT NULL,
     role VARCHAR(50) NOT NULL,
     created_at TIMESTAMP DEFAULT NOW(),
-    is_active BOOLEAN DEFAULT TRUE;
+    is_active BOOLEAN DEFAULT TRUE,
+    password_hash TEXT;
 );

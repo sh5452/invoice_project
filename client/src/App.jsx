@@ -11,6 +11,7 @@ import AddUserPage from './pages/AddUserPage';
 import LoginPage from "./pages/LoginPage";
 import UsersPage from './pages/UsersPage';
 import DeliveryNotePage from './pages/DeliveryNotePage';
+import ReturnOrder from './pages/ReturnOrder'
 
 function App() {
  return(
@@ -33,6 +34,8 @@ function App() {
 <Route path='/users' element={<UsersPage/>}/>
 
 <Route path='/delivery-notes/new/:orderId' element={<DeliveryNotePage/>}/>
+
+<Route path="/orders/:id/return" element={<ReturnOrder />} />
   
 </Routes>
   </div>

@@ -3,6 +3,7 @@ const express=require('express')
 const cors=require('cors')
 const pool=require('./db')
 const app=express()
+const bcrypt = require('bcrypt');
 
 app.use(cors())
 app.use(express.json())
@@ -65,6 +66,7 @@ app.get('/orders', async (req, res) => {
 
 
 app.post('/users', async (req, res) => {
+
     try {
 
         const {
@@ -72,26 +74,57 @@ app.post('/users', async (req, res) => {
             fullName,
             email,
             company,
-            role
-        } = req.body
+            role,
+            password
+        } = req.body;
+
+        if (!username || !fullName || !email || !company || !role || !password) {
+            return res.status(400).send('כל השדות הם חובה');
+        }
+
+        const passwordHash = await bcrypt.hash(password, 10);
 
         const result = await pool.query(
-            `INSERT INTO users
-            (username, full_name, email, company, role)
-            VALUES ($1, $2, $3, $4, $5)
-            RETURNING *`,
-            [username, fullName, email, company, role]
-        )
+            `
+            INSERT INTO users
+            (
+                username,
+                full_name,
+                email,
+                company,
+                role,
+                password_hash
+            )
+            VALUES ($1, $2, $3, $4, $5, $6)
+            RETURNING
+                id,
+                username,
+                full_name,
+                email,
+                company,
+                role,
+                created_at,
+                is_active
+            `,
+            [
+                username,
+                fullName,
+                email,
+                company,
+                role,
+                passwordHash
+            ]
+        );
 
-        res.json(result.rows[0])
+        res.json(result.rows[0]);
 
     } catch (err) {
 
-        console.error(err)
-        res.status(500).send('Error creating user')
+        console.error(err);
+        res.status(500).send('Error creating user');
 
     }
-})
+});
 
 app.put('/orders/:id', async (req, res) => {
     try {
@@ -304,144 +337,194 @@ app.patch('/orders/:id/status',async(req,res)=>{
   }
 })
 
-app.get('/orders/:id',async(req,res)=>{
-    try{
-        const{id}=req.params
-        const db = await pool.query('SELECT current_database(), current_schema()');
-        console.log("DATABASE:", db.rows);
-        const result=await pool.query(
-            `SELECT
-    orders.id AS order_id,
-    orders.order_number,
-    orders.customer_name,
-    orders.customer_phone,
-    orders.customer_address,
-    orders.status,
-    orders.is_active,
+app.get('/orders/:id', async (req, res) => {
 
-    order_items.id AS order_item_id,
-    order_items.product_name,
-    order_items.quantity,
-    order_items.price,
-    order_items.sku,
+    try {
 
-    delivery_notes.delivery_note_number,
-    delivery_notes.received_by,
-    delivery_notes.delivery_at,
-    delivery_notes.notes,
-    
-    
+        const { id } = req.params;
 
+        // =========================
+        // 1. פרטי ההזמנה
+        // =========================
 
-return_items.id AS return_item_id,
-return_items.quantity_returned,
-
-returns.id AS return_id,
-returns.reason,
-returns.created_at
-
-
-FROM orders
-
-LEFT JOIN order_items
-ON orders.id = order_items.order_id
-
-LEFT JOIN delivery_notes
-ON orders.id = delivery_notes.order_id
-
-LEFT JOIN returns
-ON orders.id=returns.order_id
-
-LEFT JOIN return_items
-ON return_items.order_item_id = order_items.id
-
-WHERE orders.id = $1
+        const orderResult = await pool.query(
             `
-
-            
-            ,
+            SELECT
+                id,
+                order_number,
+                customer_name,
+                customer_phone,
+                customer_address,
+                status,
+                is_active
+            FROM orders
+            WHERE id = $1
+            `,
             [id]
-        )
-         console.log("ROWS COUNT:", result.rows.length)
-console.log(result.rows)
-console.log("id from url:", id)
+        );
 
-console.log(
-    "DELIVERY NOTES FROM QUERY:",
-    result.rows.map(row => ({
-        delivery_note_number: row.delivery_note_number,
-        received_by: row.received_by,
-        notes: row.notes
-    }))
-);
-console.log("result:", result.rows);
-        if (result.rows.length === 0) {
-    return res.status(404).send('Order not found');
-}
-       const order={
-        id: result.rows[0].order_id,
-        
-        order_number: result.rows[0].order_number,
-        customer_name: result.rows[0].customer_name,
-        customer_phone:result.rows[0].customer_phone,
-        customer_address:result.rows[0].customer_address,
-        status:result.rows[0].status,
-         is_active: result.rows[0].is_active
-       }
-       const items=result.rows.map(item=>({
-         id: item.order_item_id,
-        product_name:item.product_name,
-        quantity:item.quantity,
-        price:item.price,
-        sku: item.sku,
-quantity_returned: item.quantity_returned
-       }))
+        if (orderResult.rows.length === 0) {
+            return res.status(404).send('Order not found');
+        }
 
-       const delivery_note=
-       {
-        delivery_note_number:
-        result.rows[0].delivery_note_number,
-        received_by:
-        result.rows[0].received_by,
-        delivery_at:
-        result.rows[0].delivery_at,
-        notes:
-        result.rows[0].notes
-        
-       }
-       console.log("DELIVERY NOTE:", delivery_note)
+        const order = orderResult.rows[0];
 
-       const returned_items=result.rows
-       .filter(row=>row.return_item_id)
-       .map(row=>({
-        product_name:row.product_name,
-        sku:row.sku,
-        quantity_returned: row.quantity_returned
-       }))
-       const return_info=
-       result.rows[0].return_id
-       ?{
-        id:result.rows[0].return_id,
-        reason:result.rows[0].reason,
-        created_at:result.rows[0].created_at,
-        items:returned_items
-       }:
-       null
-       res.json({
-        order,
-        items,
-        delivery_note,
-        return_info,
-        returned_items
-        
-        
-       })
-    }catch(err){
-        console.error(err)
-        res.status(500).send('Error fetching order')
+
+        // =========================
+        // 2. פריטי ההזמנה
+        // =========================
+
+        const itemsResult = await pool.query(
+            `
+            SELECT
+                id,
+                product_name,
+                quantity,
+                price,
+                sku
+            FROM order_items
+            WHERE order_id = $1
+            ORDER BY id
+            `,
+            [id]
+        );
+
+        const items = itemsResult.rows;
+
+
+        // =========================
+        // 3. כל תעודות המשלוח
+        // =========================
+
+        const deliveryNotesResult = await pool.query(
+            `
+            SELECT
+                id,
+                delivery_note_number,
+                received_by,
+                delivery_at,
+                notes
+            FROM delivery_notes
+            WHERE order_id = $1
+            ORDER BY delivery_at
+            `,
+            [id]
+        );
+
+        const delivery_notes = deliveryNotesResult.rows;
+
+
+        // =========================
+        // 4. כל ההחזרות
+        // =========================
+
+        const returnsResult = await pool.query(
+            `
+            SELECT
+                id AS return_id,
+                reason,
+                created_at
+            FROM returns
+            WHERE order_id = $1
+            ORDER BY created_at
+            `,
+            [id]
+        );
+
+        const returns = returnsResult.rows;
+
+
+        // =========================
+        // 5. פריטי ההחזרה
+        // =========================
+
+        const returnedItemsResult = await pool.query(
+            `
+            SELECT
+                return_items.id AS return_item_id,
+                return_items.return_id,
+                return_items.order_item_id,
+                order_items.product_name,
+                order_items.sku,
+                return_items.quantity_returned
+            FROM return_items
+
+            JOIN returns
+                ON returns.id = return_items.return_id
+
+            JOIN order_items
+                ON order_items.id = return_items.order_item_id
+
+            WHERE returns.order_id = $1
+
+            ORDER BY return_items.id
+            `,
+            [id]
+        );
+
+        const returned_items = returnedItemsResult.rows;
+
+
+        // =========================
+        // DEBUG
+        // =========================
+
+        console.log("ORDER:", order);
+
+        console.log("ITEMS:", items);
+
+        console.log(
+            "DELIVERY NOTES:",
+            delivery_notes
+        );
+
+        console.log(
+            "RETURNS:",
+            returns
+        );
+
+        console.log(
+            "RETURNED ITEMS:",
+            returned_items
+        );
+
+
+        // =========================
+        // RESPONSE
+        // =========================
+
+        res.json({
+
+            order: {
+                id: order.id,
+                order_number: order.order_number,
+                customer_name: order.customer_name,
+                customer_phone: order.customer_phone,
+                customer_address: order.customer_address,
+                status: order.status,
+                is_active: order.is_active
+            },
+
+            items,
+
+            delivery_notes,
+
+            returns,
+
+            returned_items
+
+        });
+
+
+    } catch (err) {
+
+        console.error(err);
+
+        res.status(500).send('Error fetching order');
+
     }
-})
 
+});
 app.patch('/orders/:id/deactivate', async (req, res) => {
     try {
 
@@ -520,27 +603,60 @@ app.put('/order-items/:id', async(req,res)=>{
   res.json(result.rows[0])
 })
 
-app.post('/returns',async(req,res)=>{
-  try{
-    const {order_id,reason}=req.body
-    const result=await pool.query(
-      `
-      INSERT INTO returns(
-      order_id,
-      reason
-      )
-      VALUES($1,$2)
-      RETURNING *
-      
-      `,
-      [order_id,reason]
+app.post('/returns', async (req, res) => {
+  
+    try {
+console.log("RETURN BODY:", req.body);
+        const { order_id, reason, items } = req.body;
 
-    )
-    res.json(result.rows[0])
-  }catch(err){
-    console.error(500).send('ERROR creating returns')
-  }
-})
+        // יצירת ההחזרה
+        const returnResult = await pool.query(
+            `
+            INSERT INTO returns (
+                order_id,
+                reason
+            )
+            VALUES ($1, $2)
+            RETURNING *
+            `,
+            [order_id, reason]
+        );
+
+        const return_id = returnResult.rows[0].id;
+
+        // שמירת פריטי ההחזרה
+        for (const item of items) {
+
+            await pool.query(
+                `
+                INSERT INTO return_items (
+                    return_id,
+                    order_item_id,
+                    quantity_returned
+                )
+                VALUES ($1, $2, $3)
+                `,
+                [
+                    return_id,
+                    item.order_item_id,
+                    item.quantity_returned
+                ]
+            );
+
+        }
+
+        res.json({
+            return: returnResult.rows[0],
+            items
+        });
+
+    } catch (err) {
+
+        console.error(err);
+        res.status(500).send('ERROR creating return');
+
+    }
+});
 
 app.post('/return-items', async(req,res)=>{
   try{

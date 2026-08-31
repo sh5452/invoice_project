@@ -22,8 +22,14 @@ const [isEditingStatus, setIsEditingStatus] = useState(false);
             const res = await api.get(`/orders/${id}`);
 
             console.log("SERVER RESPONSE:", res.data);
+            console.log("RETURNED ITEMS:", res.data.returned_items);
+             console.log("RETURN PAGE RESPONSE:", res.data);
+        console.log("ORDER:", res.data.order);
+        console.log("ITEMS:", res.data.items);
+        
+
            
-console.log("DELIVERY NOTE:", res.data.delivery_note);
+console.log("DELIVERY NOTES:", res.data.delivery_notes);
 console.log("NOTES:", res.data.delivery_note?.notes);
 
 
@@ -218,6 +224,9 @@ function cancelStatusEdit() {
     onClick={() => navigate(`/delivery-notes/new/${id}`)}
 >
     הוספת תעודת משלוח
+</button>
+<button onClick={() => navigate(`/orders/${id}/return`)}>
+    הוספת החזרה
 </button>
  </>
             )}
@@ -442,57 +451,81 @@ function cancelStatusEdit() {
             ))}
 
             {/* תעודת משלוח - צפייה בלבד */}
+{orderData.delivery_notes &&
+    orderData.delivery_notes.length > 0 && (
 
-            {orderData.delivery_note?.delivery_note_number && (
+    <>
+        <h3>תעודות משלוח</h3>
 
-                <>
-                    <h3>תעודת משלוח</h3>
+        {orderData.delivery_notes.map((note, index) => (
 
-                    <p>
-                        מספר:
-                        {orderData.delivery_note.delivery_note_number}
-                    </p>
+            <div key={note.id || index}>
 
-                    <p>
-                        התקבל אצל:
-                        {orderData.delivery_note.received_by}
-                    </p>
-                    <p>
-                        הערות:
-                        {orderData.delivery_note.notes}
-                    </p>
-        
-                </>
+                <p>
+                    מספר: {note.delivery_note_number}
+                </p>
 
-            )}
+                <p>
+                    התקבל אצל: {note.received_by}
+                </p>
 
-            {/* החזרה - צפייה בלבד */}
+                <p>
+                    הערות: {note.notes}
+                </p>
 
-            {orderData.return_info && (
+            </div>
 
-                <>
-                    <h3>החזרה</h3>
+        ))}
 
-                    <p>
-                        סיבה:
-                        {orderData.return_info.reason}
-                    </p>
+    </>
 
-                    {orderData.return_info.items.map(
-                        (item, index) => (
 
-                            <p key={index}>
-                                {item.product_name} -
-                                הוחזר: {item.quantity_returned}
-                            </p>
-
-                        )
-                    )}
     
 
-                </>
+)}
+         {/* החזרות - צפייה בלבד */}
 
-            )}
+{orderData.returns && orderData.returns.length > 0 && (
+
+    <>
+        <h3>החזרות</h3>
+
+        {orderData.returns.map((returnItem, index) => (
+
+            <div key={returnItem.id || index}>
+
+                <p>
+                    סיבת ההחזרה: {returnItem.reason}
+                </p>
+
+                <p>
+                    תאריך: {returnItem.created_at}
+                </p>
+
+            </div>
+
+        ))}
+
+        <h4>פריטים שהוחזרו:</h4>
+
+        {orderData.returned_items &&
+            orderData.returned_items.length > 0 &&
+            orderData.returned_items.map((item, index) => (
+
+                <p key={`${item.return_id}-${item.order_item_id}-${index}`}>
+                    {item.product_name}
+                    {" | "}
+                    מק"ט: {item.sku}
+                    {" | "}
+                    כמות שהוחזרה: {item.quantity_returned}
+                </p>
+
+            ))
+        }
+
+    </>
+
+)}
                             <p>
     מצב: {orderData.order.is_active ? "פעילה" : "מושבתת"}
 </p>
