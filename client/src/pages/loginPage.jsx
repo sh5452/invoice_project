@@ -1,30 +1,51 @@
 import { useState } from "react";
 import "./LoginPage.css";
 import { useNavigate } from "react-router-dom";
+import axios from 'axios'
 
 function LoginPage() {
     const navigate = useNavigate();
 
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
-    const user = {
-        username: "test",
-        password: "123456",
-        role: "company_admin"
-      };
+   
     
+const handleLogin = async (e) => {
 
-    const handleLogin = (e) => {
-        e.preventDefault();
-          // זמני בלבד
-          if (
-            username === user.username &&
-            password === user.password
-          ) {
-            navigate("/home");
-          }
-        
-        }
+    e.preventDefault();
+
+    try {
+
+        const response = await axios.post(
+            'http://localhost:5000/login',
+            {
+                username,
+                password
+            }
+        );
+
+        console.log("LOGIN RESPONSE:", response.data);
+
+        localStorage.setItem(
+            'token',
+            response.data.token
+        );
+
+        localStorage.setItem(
+            'user',
+            JSON.stringify(response.data.user)
+        );
+
+        navigate('/home');
+
+    } catch (err) {
+
+        console.error(err);
+
+        alert('שם משתמש או סיסמה שגויים');
+
+    }
+};
     
 
     return (

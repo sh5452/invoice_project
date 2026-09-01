@@ -3,8 +3,10 @@ import './AddUserPage.css';
 import axios from 'axios';
 import { Navigate, useNavigate } from 'react-router-dom';
 
+
 function AddUserPage() {
     const navigate=useNavigate()
+
 
   const [user, setUser] = useState({
     username: "",
@@ -16,13 +18,19 @@ function AddUserPage() {
 })
 const handleSubmit = async (e) => {
     e.preventDefault();
+   
 
     try {
-
-        const response = await axios.post(
-            'http://localhost:5000/users',
-            user
-        );
+ const token = localStorage.getItem('token');
+     const response = await axios.post(
+    'http://localhost:5000/users',
+    user,
+    {
+        headers: {
+            Authorization: `Bearer ${token}`
+        }
+    }
+);
 
         console.log(response.data);
          navigate('/users');

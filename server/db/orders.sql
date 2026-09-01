@@ -6,5 +6,7 @@ CREATE TABLE orders (
     customer_address TEXT,
     status VARCHAR(20) DEFAULT 'open',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    is_active BOOLEAN DEFAULT TRUE;
+    is_active BOOLEAN DEFAULT TRUE,
+    company VARCHAR(150),
+    driver_id INTEGER REFERENCES users(id);
 );

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import axios from 'axios';
+import api from '../services/api'
 
 function UsersPage() {
 
@@ -13,8 +13,8 @@ function UsersPage() {
     const saveUser = async () => {
         try {
 
-            const response = await axios.put(
-                `http://localhost:5000/users/${editingUser.id}`,
+            const response = await api.put(
+                `/users/${editingUser.id}`,
                 {
                     username: editingUser.username,
                     fullName: editingUser.full_name,
@@ -58,8 +58,8 @@ function UsersPage() {
 
     try {
 
-        const response = await axios.patch(
-            `http://localhost:5000/users/${id}/deactivate`
+        const response = await api.patch(
+            `users/${id}/deactivate`
         );
 
         setUsers(
@@ -82,8 +82,8 @@ function UsersPage() {
         const fetchUsers = async () => {
             try {
 
-                const response = await axios.get(
-                    'http://localhost:5000/users'
+                const response = await api.get(
+                    '/users'
                 );
 
                 setUsers(response.data);

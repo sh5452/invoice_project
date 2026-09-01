@@ -1,7 +1,14 @@
-import { Link } from "react-router-dom";
+import { Link,  useNavigate } from "react-router-dom";
 import "./Navbar.css";
 
 function Navbar() {
+    const navigate = useNavigate();
+    const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+
+    navigate('/');
+};
 
     return (
 
@@ -17,6 +24,10 @@ function Navbar() {
 
             <div className="menu">
 
+                {JSON.parse(localStorage.getItem('user'))?.role === 'company_admin' && (
+    <Link to="/add-user">הוספת משתמש</Link>
+)}
+
                 <Link to="/delivery-note">תעודת משלוח</Link>
 
                 <Link to="/orders">רשימת הזמנות</Link>
@@ -25,7 +36,15 @@ function Navbar() {
 
                 <Link to="/home">ראשי</Link>
 
-                <Link to="/">התחברות</Link>
+                {localStorage.getItem('token') ? (
+    <button onClick={handleLogout}>
+        התנתקות
+    </button>
+) : (
+    <Link to="/">
+        התחברות
+    </Link>
+)}
 
             </div>
 

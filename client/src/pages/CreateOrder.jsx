@@ -74,11 +74,15 @@ function createQuantityOptions(packSize){
 }
 
 async function handleSubmit(e) {
+  
+   
+    alert("הגעתי ל-handleSubmit");
     e.preventDefault();
 
     try {
-
+        alert("לפני POST");
         const orderResponse = await api.post('/orders', order);
+            alert("POST הצליח");
 
         const createdOrder = orderResponse.data;
 
@@ -99,11 +103,16 @@ async function handleSubmit(e) {
 
     } catch (err) {
 
-        console.error(err);
-        console.error("ERROR:", err);
-console.error("RESPONSE:", err.response?.data);
-console.error("STATUS:", err.response?.status);
-        alert("שגיאה ביצירת ההזמנה");
+        console.error("========== CREATE ORDER ERROR ==========");
+    console.error(err);
+    console.error("STATUS:", err.response?.status);
+    console.error("DATA:", err.response?.data);
+    console.error("========================================");
+
+    alert(
+        "שגיאה: " +
+        (err.response?.data || err.message)
+    );
 
     }
 }
