@@ -76,13 +76,13 @@ function createQuantityOptions(packSize){
 async function handleSubmit(e) {
   
    
-    alert("הגעתי ל-handleSubmit");
+   
     e.preventDefault();
 
     try {
-        alert("לפני POST");
+       
         const orderResponse = await api.post('/orders', order);
-            alert("POST הצליח");
+           
 
         const createdOrder = orderResponse.data;
 

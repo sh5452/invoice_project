@@ -2,19 +2,29 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
 import { useParams, useNavigate } from 'react-router-dom'
+import './OrderDetails.css';
+
 function OrderDetails() {
 
     const { id } = useParams();
-const navigate = useNavigate();
+    const navigate = useNavigate();
+    const currentUser = JSON.parse(localStorage.getItem('user') || 'null');
     const [orderData, setOrderData] = useState(null);
     const [isEditing, setIsEditing] = useState(false);
+    const [drivers, setDrivers] = useState([]);
+    const [selectedDriver, setSelectedDriver] = useState("");
     const [selectedStatus, setSelectedStatus] = useState("");
-const [isEditingStatus, setIsEditingStatus] = useState(false);
+    const [isEditingStatus, setIsEditingStatus] = useState(false);
 
-    useEffect(() => {
-        loadOrder();
-    }, []);
+useEffect(() => {
+    console.log("LOADING DRIVERS");
 
+    loadOrder();
+
+    if (currentUser?.role === "company_admin") {
+        loadDrivers();
+    }
+}, []);
     async function loadOrder() {
 
         try {
@@ -23,24 +33,65 @@ const [isEditingStatus, setIsEditingStatus] = useState(false);
 
             console.log("SERVER RESPONSE:", res.data);
             console.log("RETURNED ITEMS:", res.data.returned_items);
-             console.log("RETURN PAGE RESPONSE:", res.data);
-        console.log("ORDER:", res.data.order);
-        console.log("ITEMS:", res.data.items);
-        
-
-           
-console.log("DELIVERY NOTES:", res.data.delivery_notes);
-console.log("NOTES:", res.data.delivery_note?.notes);
+            console.log("RETURN PAGE RESPONSE:", res.data);
+            console.log("ORDER:", res.data.order);
+            console.log("ITEMS:", res.data.items);
+            console.log("DELIVERY NOTES:", res.data.delivery_notes);
+            console.log("NOTES:", res.data.delivery_note?.notes);
 
 
             setOrderData(res.data);
             setSelectedStatus(res.data.order.status);
-            
+            setSelectedDriver(res.data.order.driver_id || "");
+
 
         } catch (err) {
 
             console.error(err);
 
+        }
+    }
+
+    async function loadDrivers() {
+        try {
+            const res = await api.get('/drivers');
+
+            console.log("DRIVERS:", res.data);
+
+            setDrivers(res.data);
+
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    async function assignDriver() {
+        if (!selectedDriver) {
+            alert("יש לבחור נהג");
+            return;
+        }
+
+        try {
+            const res = await api.patch(
+                `/orders/${id}/assign-driver`,
+                {
+                    driver_id: selectedDriver
+                }
+            );
+
+            setOrderData({
+                ...orderData,
+                order: {
+                    ...orderData.order,
+                    driver_id: res.data.driver_id
+                }
+            });
+
+            alert("הנהג שויך להזמנה בהצלחה");
+
+        } catch (err) {
+            console.error(err);
+            alert("שגיאה בשיוך הנהג");
         }
     }
 
@@ -70,33 +121,33 @@ console.log("NOTES:", res.data.delivery_note?.notes);
         });
     }
     async function deactivateOrder() {
-    const confirmed = window.confirm(
-        "האם אתה בטוח שברצונך להשבית את ההזמנה?"
-    );
-
-    if (!confirmed) {
-        return;
-    }
-
-    try {
-        const res = await api.patch(
-            `/orders/${id}/deactivate`
+        const confirmed = window.confirm(
+            "האם אתה בטוח שברצונך להשבית את ההזמנה?"
         );
 
-        setOrderData({
-            ...orderData,
-            order: res.data
-        });
+        if (!confirmed) {
+            return;
+        }
 
-        alert("ההזמנה הושבתה בהצלחה");
+        try {
+            const res = await api.patch(
+                `/orders/${id}/deactivate`
+            );
 
-    } catch (err) {
+            setOrderData({
+                ...orderData,
+                order: res.data
+            });
 
-        console.error(err);
-        alert("שגיאה בהשבתת ההזמנה");
+            alert("ההזמנה הושבתה בהצלחה");
 
+        } catch (err) {
+
+            console.error(err);
+            alert("שגיאה בהשבתת ההזמנה");
+
+        }
     }
-}
 
     async function saveOrder() {
 
@@ -147,90 +198,76 @@ console.log("NOTES:", res.data.delivery_note?.notes);
     if (!orderData) {
         return <p>טוען הזמנה...</p>;
     }
-    async function updateStatus(newStatus) {
-    try {
+    
+    async function saveStatus() {
+        try {
 
-        const res = await api.patch(
-            `/orders/${id}/status`,
-            { status: newStatus }
-        );
+            const res = await api.patch(
+                `/orders/${id}/status`,
+                { status: selectedStatus }
+            );
 
-        setOrderData({
-            ...orderData,
-            order: {
-                ...orderData.order,
-                status: res.data.status
-            }
-        });
+            setOrderData({
+                ...orderData,
+                order: {
+                    ...orderData.order,
+                    status: res.data.status
+                }
+            });
 
-    } catch (err) {
+            setIsEditingStatus(false);
 
-        console.error(err);
-        alert("שגיאה בעדכון סטטוס");
+        } catch (err) {
 
+            console.error(err);
+            alert("שגיאה בעדכון סטטוס");
+
+        }
     }
-}
 
-async function saveStatus() {
-    try {
-
-        const res = await api.patch(
-            `/orders/${id}/status`,
-            { status: selectedStatus }
-        );
-
-        setOrderData({
-            ...orderData,
-            order: {
-                ...orderData.order,
-                status: res.data.status
-            }
-        });
-
+    function cancelStatusEdit() {
+        setSelectedStatus(orderData.order.status);
         setIsEditingStatus(false);
-
-    } catch (err) {
-
-        console.error(err);
-        alert("שגיאה בעדכון סטטוס");
-
     }
-}
-
-function cancelStatusEdit() {
-    setSelectedStatus(orderData.order.status);
-    setIsEditingStatus(false);
-}
 
     return (
 
-        <div>
+        <div className="order-details">
 
             <h2>
                 פרטי הזמנה מספר {orderData.order.order_number}
             </h2>
+{!isEditing && (
+    <>
+        {/* פעולות של לקוח בלבד */}
+        {currentUser?.role === 'customer' && (
+            <>
+                <button onClick={() => setIsEditing(true)}>
+                    עריכה
+                </button>
 
-            {!isEditing && (
-                 <>
-        <button onClick={() => setIsEditing(true)}>
-            עריכה
-        </button>
+                <button onClick={deactivateOrder}>
+                    השבת הזמנה
+                </button>
 
-        <button onClick={deactivateOrder}>
-            השבת הזמנה
-        </button>
-   
                 <button
-    onClick={() => navigate(`/delivery-notes/new/${id}`)}
->
-    הוספת תעודת משלוח
-</button>
-<button onClick={() => navigate(`/orders/${id}/return`)}>
-    הוספת החזרה
-</button>
- </>
-            )}
+                    onClick={() => navigate(`/orders/${id}/return`)}
+                >
+                    הוספת החזרה
+                </button>
+            </>
+        )}
 
+        {/* תעודת משלוח - נהג בלבד */}
+        {currentUser?.role === 'driver' && (
+            <button
+                onClick={() => navigate(`/delivery-notes/new/${id}`)}
+            >
+                הוספת תעודת משלוח
+            </button>
+        )}
+    </>
+)}
             {isEditing && (
                 <>
                     <button onClick={saveOrder}>
@@ -243,7 +280,7 @@ function cancelStatusEdit() {
                     }}>
                         ביטול
                     </button>
-                
+
                 </>
             )}
 
@@ -339,18 +376,38 @@ function cancelStatusEdit() {
 
             )}
 
-  <h3>סטטוס הזמנה</h3>
+         <h3>סטטוס הזמנה</h3>
 
 {!isEditingStatus ? (
 
     <div>
+
         <p>
             סטטוס: {orderData.order.status}
         </p>
 
-        <button onClick={() => setIsEditingStatus(true)}>
-            שינוי סטטוס
-        </button>
+        {/* מנהל ועובד חברה */}
+        {(currentUser?.role === 'company_admin' ||
+          currentUser?.role === 'employee') && (
+
+            <button onClick={() => setIsEditingStatus(true)}>
+                שינוי סטטוס
+            </button>
+        )}
+
+        {/* נהג */}
+        {currentUser?.role === 'driver' &&
+         (orderData.order.status === 'בטיפול' ||
+          orderData.order.status === 'נשלחה') && (
+
+          <button onClick={() => {
+    setSelectedStatus('סופקה');
+    setIsEditingStatus(true);
+}}>
+    סימון כסופקה
+</button>
+        )}
+
     </div>
 
 ) : (
@@ -361,11 +418,24 @@ function cancelStatusEdit() {
             value={selectedStatus}
             onChange={(e) => setSelectedStatus(e.target.value)}
         >
-            <option value="חדשה">חדשה</option>
-            <option value="בטיפול">בטיפול</option>
-            <option value="מחכה למלאי">מחכה למלאי</option>
-            <option value="נשלחה">נשלחה</option>
-            <option value="סופקה">סופקה</option>
+
+            {/* מנהל ועובד חברה */}
+            {(currentUser?.role === 'company_admin' ||
+              currentUser?.role === 'employee') && (
+
+                <>
+                    <option value="חדשה">חדשה</option>
+                    <option value="בטיפול">בטיפול</option>
+                    <option value="מחכה למלאי">מחכה למלאי</option>
+                    <option value="נשלחה">נשלחה</option>
+                </>
+            )}
+
+            {/* נהג */}
+            {currentUser?.role === 'driver' && (
+                <option value="סופקה">סופקה</option>
+            )}
+
         </select>
 
         <button onClick={saveStatus}>
@@ -379,7 +449,30 @@ function cancelStatusEdit() {
     </div>
 
 )}
+           {/* הקצאת נהג */}
 
+{currentUser?.role === 'company_admin' && (
+    <>
+        <h3>נהג</h3>
+
+        <select
+            value={selectedDriver}
+            onChange={(e) => setSelectedDriver(e.target.value)}
+        >
+            <option value="">בחר נהג</option>
+
+            {drivers.map((driver) => (
+                <option key={driver.id} value={driver.id}>
+                    {driver.full_name}
+                </option>
+            ))}
+        </select>
+
+        <button onClick={assignDriver}>
+            שייך נהג
+        </button>
+    </>
+)}
             {/* מוצרים */}
 
             <h3>מוצרים</h3>
@@ -451,84 +544,86 @@ function cancelStatusEdit() {
             ))}
 
             {/* תעודת משלוח - צפייה בלבד */}
-{orderData.delivery_notes &&
-    orderData.delivery_notes.length > 0 && (
+            {orderData.delivery_notes &&
+                orderData.delivery_notes.length > 0 && (
 
-    <>
-        <h3>תעודות משלוח</h3>
+                    <>
+                        <h3>תעודות משלוח</h3>
 
-        {orderData.delivery_notes.map((note, index) => (
+                        {orderData.delivery_notes.map((note, index) => (
 
-            <div key={note.id || index}>
+                            <div key={note.id || index}>
 
-                <p>
-                    מספר: {note.delivery_note_number}
-                </p>
+                                <p>
+                                    מספר: {note.delivery_note_number}
+                                </p>
 
-                <p>
-                    התקבל אצל: {note.received_by}
-                </p>
+                                <p>
+                                    התקבל אצל: {note.received_by}
+                                </p>
 
-                <p>
-                    הערות: {note.notes}
-                </p>
+                                <p>
+                                    הערות: {note.notes}
+                                </p>
 
-            </div>
+                            </div>
 
-        ))}
+                        ))}
 
-    </>
+                    </>
 
 
-    
 
-)}
-         {/* החזרות - צפייה בלבד */}
 
-{orderData.returns && orderData.returns.length > 0 && (
+                )}
+            {/* החזרות - צפייה בלבד */}
 
-    <>
-        <h3>החזרות</h3>
+            {orderData.returns && orderData.returns.length > 0 && (
 
-        {orderData.returns.map((returnItem, index) => (
+                <>
+                    <h3>החזרות</h3>
 
-            <div key={returnItem.id || index}>
+                    {orderData.returns.map((returnItem, index) => (
 
-                <p>
-                    סיבת ההחזרה: {returnItem.reason}
-                </p>
+                        <div key={returnItem.id || index}>
 
-                <p>
-                    תאריך: {returnItem.created_at}
-                </p>
-
-            </div>
-
-        ))}
-
-        <h4>פריטים שהוחזרו:</h4>
-
-        {orderData.returned_items &&
-            orderData.returned_items.length > 0 &&
-            orderData.returned_items.map((item, index) => (
-
-                <p key={`${item.return_id}-${item.order_item_id}-${index}`}>
-                    {item.product_name}
-                    {" | "}
-                    מק"ט: {item.sku}
-                    {" | "}
-                    כמות שהוחזרה: {item.quantity_returned}
-                </p>
-
-            ))
-        }
-
-    </>
-
-)}
                             <p>
-    מצב: {orderData.order.is_active ? "פעילה" : "מושבתת"}
-</p>
+                                סיבת ההחזרה: {returnItem.reason}
+                            </p>
+
+                            <p>
+                                תאריך: {returnItem.created_at}
+                            </p>
+
+                        </div>
+
+                    ))}
+
+                    <h4>פריטים שהוחזרו:</h4>
+
+                    {orderData.returned_items &&
+                        orderData.returned_items.length > 0 &&
+                        orderData.returned_items.map((item, index) => (
+
+                            <p 
+    className="returned-item"
+    key={`${item.return_id}-${item.order_item_id}-${index}`}>
+                                {item.product_name}
+                                {" | "}
+                                מק"ט: {item.sku}
+                                {" | "}
+                                כמות שהוחזרה: {item.quantity_returned}
+                            </p>
+
+                        ))
+                    }
+
+                </>
+
+            )}
+            <p>
+                מצב: {orderData.order.is_active ? "פעילה" : "מושבתת"}
+            </p>
 
         </div>
     );

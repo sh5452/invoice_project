@@ -171,12 +171,17 @@ router.get(
         customer_address,
         status,
         is_active,
-        company
+        company,
+        driver_id
     FROM orders
     WHERE id = $1
     AND company = $2
+    AND (
+    $3 <> 'driver'
+    OR driver_id = $4
+)
     `,
-    [id, req.user.company]
+    [id, req.user.company, req.user.role, req.user.id]
 );
 
             if (orderResult.rows.length === 0) {
@@ -283,7 +288,8 @@ router.get(
                     customer_address: order.customer_address,
                     status: order.status,
                     is_active: order.is_active,
-                    company: order.company
+                    company: order.company,
+                    driver_id: order.driver_id
                 },
 
                 items,
@@ -373,18 +379,33 @@ console.log("ORDER BODY:", req.body);
 
 router.patch(
     '/:id/status',
+
     authenticateToken,
+
     authorizeRoles(
         'company_admin',
         'employee',
         'driver'
     ),
+
+    // בדיקה שההרשאה עברה
+    (req, res, next) => {
+        console.log("🔥 STATUS MIDDLEWARE PASSED");
+        next();
+    },
+
     async (req, res) => {
+
+        console.log("🔥 STATUS ROUTE HIT");
 
         try {
 
             const { id } = req.params;
             const { status } = req.body;
+
+            console.log("STATUS ID:", id);
+            console.log("STATUS BODY:", req.body);
+            console.log("STATUS USER:", req.user);
 
             const validStatuses = [
                 'חדשה',
@@ -395,40 +416,108 @@ router.patch(
             ];
 
             if (!validStatuses.includes(status)) {
-                return res.status(400).send('Invalid status');
-            }
-
-            // נהג יכול לשנות רק ל"סופקה"
-
-            if (
-                req.user.role === 'driver' &&
-                status !== 'סופקה'
-            ) {
                 return res
-                    .status(403)
-                    .send('נהג יכול לשנות רק לסטטוס סופקה');
+                    .status(400)
+                    .send('Invalid status');
             }
-const result = await pool.query(
-    `
-    UPDATE orders
-    SET status = $1
-    WHERE id = $2
-    AND company = $3
-    RETURNING *
-    `,
-    [status, id, req.user.company]
-);
-if (result.rows.length === 0) {
-    return res.status(404).send('Order not found');
-}
+
+            // =========================
+            // נהג
+            // =========================
+
+            if (req.user.role === 'driver') {
+
+                if (status !== 'סופקה') {
+                    return res
+                        .status(403)
+                        .send('נהג יכול לשנות רק לסטטוס סופקה');
+                }
+
+                const orderCheck = await pool.query(
+                    `
+                    SELECT
+                        status,
+                        driver_id,
+                        company
+                    FROM orders
+                    WHERE id = $1
+                    AND company = $2
+                    AND driver_id = $3
+                    `,
+                    [
+                        id,
+                        req.user.company,
+                        req.user.id
+                    ]
+                );
+
+                console.log("🔥 DRIVER CHECK:", {
+                    id,
+                    userId: req.user.id,
+                    company: req.user.company,
+                    order: orderCheck.rows
+                });
+
+                if (orderCheck.rows.length === 0) {
+                    return res
+                        .status(404)
+                        .send('Order not found');
+                }
+
+                if (
+                    orderCheck.rows[0].status !== 'נשלחה' &&
+                    orderCheck.rows[0].status !== 'בטיפול'
+                ) {
+                    return res
+                        .status(403)
+                        .send(
+                            'נהג יכול לסמן סופקה רק להזמנה שנשלחה או בטיפול'
+                        );
+                }
+            }
+
+            // =========================
+            // עדכון הסטטוס
+            // =========================
+
+            const result = await pool.query(
+                `
+                UPDATE orders
+                SET status = $1
+                WHERE id = $2
+                AND company = $3
+                AND (
+                    $4 <> 'driver'
+                    OR driver_id = $5
+                )
+                RETURNING *
+                `,
+                [
+                    status,
+                    id,
+                    req.user.company,
+                    req.user.role,
+                    req.user.id
+                ]
+            );
+
+            console.log("🔥 STATUS UPDATE RESULT:", result.rows);
+
+            if (result.rows.length === 0) {
+                return res
+                    .status(404)
+                    .send('Order not found');
+            }
 
             res.json(result.rows[0]);
 
         } catch (err) {
 
-            console.error(err);
-            res.status(500).send('Error updating status');
+            console.error("🔥 STATUS ERROR:", err);
 
+            res
+                .status(500)
+                .send("Error updating status");
         }
     }
 );

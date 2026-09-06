@@ -30,8 +30,6 @@ function OrdersPage() {
     }
 
     const canCreateOrder =
-        user?.role === 'company_admin' ||
-        user?.role === 'employee' ||
         user?.role === 'customer';
 
     return (

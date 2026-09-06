@@ -36,6 +36,9 @@ const handleLogin = async (e) => {
             JSON.stringify(response.data.user)
         );
 
+        window.dispatchEvent(new Event("login"));
+
+
         navigate('/home');
 
     } catch (err) {

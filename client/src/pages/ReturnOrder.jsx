@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../services/api'
-
+import './ReturnOrder.css'
 function ReturnOrder() {
 
     const { id } = useParams()
@@ -148,11 +148,21 @@ console.log("RETURN PAGE ITEMS:", res.data.items)
                 onChange={() => toggleItem(item.id)}
             />
 
-            {item.product_name}
+            <span className="return-product-name">
+                {item.product_name}
+            </span>
+
             {" | "}
-            מק"ט: {item.sku}
+
+            <span className="return-sku">
+                מק"ט: {item.sku}
+            </span>
+
             {" | "}
-            הוזמן: {item.quantity}
+
+            <span className="return-quantity">
+                הוזמן: {item.quantity}
+            </span>
 
         </label>
 
@@ -188,16 +198,13 @@ console.log("RETURN PAGE ITEMS:", res.data.items)
 
     </div>
 
-
-
-                ))}
+))}
 
                 <div>
 
-                    <label>
-                        סיבת ההחזרה:
-                    </label>
-
+                   <label className="return-reason">
+    סיבת ההחזרה:
+</label>
                     <textarea
                         value={reason}
                         onChange={(e) => setReason(e.target.value)}
@@ -224,4 +231,4 @@ console.log("RETURN PAGE ITEMS:", res.data.items)
     )
 }
 
-export default ReturnOrder
+export default ReturnOrder;
