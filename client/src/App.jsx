@@ -12,7 +12,7 @@ import Navbar from "./components/Navbar";
 import OrdersPage from "./pages/OrdersPage";
 import CreateOrder from "./pages/CreateOrder";
 import AddUserPage from "./pages/AddUserPage";
-import LoginPage from "./pages/LoginPage";
+import LoginPage from "./pages/loginPage";
 import UsersPage from "./pages/UsersPage";
 import DeliveryNotePage from "./pages/DeliveryNotePage";
 import ReturnOrder from "./pages/ReturnOrder";
