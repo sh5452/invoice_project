@@ -1,10 +1,11 @@
 .home-page {
     min-height: 100vh;
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
     padding: 0 45px 10px;
     direction: rtl;
     color: white;
-
-    margin-left: 8%;
     text-align: center;
 }
 
@@ -32,17 +33,17 @@ body {
 ========================================= */
 .main-title {
     color: white;
-    font-size: 2.7rem;
+    font-size: clamp(2rem, 3vw, 2.7rem);
     font-weight: 700;
 
-    margin: 3px 190px 15px 3px;
+    margin: 3px auto 14px;
     padding-top: 16px;
 
-    width: 500px;
+    width: fit-content;
+    max-width: 100%;
 
-    transform: translateX(-340px);
-
-    white-space: nowrap;
+    white-space: normal;
+      transform: translateX(-80px);
 }
 
 
@@ -62,13 +63,13 @@ body {
 ========================================= */
 .home-page h2 {
     color: #facc15;
-    font-size: 1.6rem;
+    font-size: clamp(1.2rem, 2vw, 1.6rem);
 
     margin: 5px 0 15px;
 
-    transform: translateX(-240px);
+    transform: translateX(-90px);
 
-    white-space: nowrap;
+    white-space: normal;
 
     text-shadow:
         0 0 8px #facc15,
@@ -87,20 +88,16 @@ body {
 .home-intro h4 {
     color: azure;
     font-size: 1.10rem;
-
     margin: 0 0 5px;
-
-    transform: translateX(-240px);
+    transform: translateX(-130px);
 }
 
 .home-intro p {
     color: white;
     font-size: 1.0rem;
     line-height: 1.6;
-
     margin: 0;
-
-    transform: translateX(-240px);
+    transform: translateX(-100px);
 }
 
 
@@ -143,6 +140,8 @@ body {
     margin-top: 10px;
 
     justify-content: center;
+        transform: translateX(120px);
+
 }
 
 
@@ -158,6 +157,20 @@ body {
     
 
     color: white;
+      transition: transform 0.25s ease;
+    cursor: default;
+}
+.feature-card:hover {
+    transform: translateY(-4px);
+}
+
+.feature-card:hover .icon {
+    transform: scale(1.15);
+    text-shadow: 0 0 10px #facc15;
+}
+
+.icon {
+    transition: transform 0.25s ease, text-shadow 0.25s ease;
 }
 
 
@@ -199,6 +212,7 @@ body {
     margin-top: 10px;
 
     margin-bottom: 10px;
+      transform: translateX(100px);
 }
 
 
@@ -377,17 +391,15 @@ body {
     .home-page {
         padding: 60px;
     }
-
-    .main-title {
-        font-size: 2.8rem;
-
-        width: auto;
-
-         margin-top: -20px;
-
-        white-space: normal;
-       
-    }
+.main-title {
+    font-size: 2.4rem;
+    width: 100%;
+    max-width: 500px;
+    margin: 0 auto 15px;
+    padding-top: 10px;
+    white-space: normal;
+    line-height: 1.2;
+}
 
     .home-page h2 {
         font-size: 1.5rem;
@@ -423,13 +435,12 @@ body {
         text-align: center;
     }
 
-    .features {
-        justify-content: center;
-
-        flex-wrap: wrap;
-
-        gap: 15px;
-    }
+  .features {
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    transform: none;
+}
 
     .hero-buttons {
         justify-content: center;
@@ -443,6 +454,24 @@ body {
         grid-template-columns: 1fr;
 
         margin-top: 25px;
+    }
+}
+
+@media (max-width: 768px) {
+
+    .main-title {
+        width: 320px;
+        max-width: 100%;
+        margin: 0 auto 15px;
+        white-space: normal;
+        line-height: 1.2;
+    }
+
+    .features {
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        transform: none;
     }
 }
 
@@ -517,4 +546,125 @@ body {
     text-shadow:
         0 0 8px rgba(250,204,21,.7),
         0 0 18px rgba(250,204,21,.35);
+}
+/* =========================================
+   טאבלט ומסכים בינוניים
+========================================= */
+
+@media (max-width: 1100px) {
+
+    .home-page {
+        padding: 20px 30px 10px;
+    }
+
+    .hero-content {
+        transform: none;
+        padding-left: 0;
+        text-align: center;
+    }
+
+    .home-intro h4,
+    .home-intro p {
+        transform: none;
+    }
+
+    .system-features {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 18px;
+    }
+}
+
+/* =========================================
+   טלפון
+========================================= */
+
+@media (max-width: 600px) {
+
+    .home-page {
+        padding: 15px 15px 10px;
+    }
+
+    .main-title {
+        font-size: 2rem;
+        margin-top: 0;
+        padding-top: 10px;
+    }
+
+    .home-page h2 {
+        font-size: 1.25rem;
+        transform: none;
+    }
+
+    .home-intro {
+        margin-top: 15px;
+    }
+
+    .home-intro h4 {
+        font-size: 1rem;
+    }
+
+    .home-intro p {
+        font-size: 0.9rem;
+    }
+
+    .hero {
+        min-height: auto;
+    }
+
+    .features {
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .feature-card h4 {
+        white-space: normal;
+        text-align: center;
+    }
+
+    .hero-buttons {
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .primary-btn,
+    .secondary-btn {
+        width: 100%;
+        max-width: 280px;
+    }
+
+    .system-features {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+
+    .system-card {
+        min-height: auto;
+    }
+
+    .closing-card {
+        gap: 10px;
+        padding: 12px;
+    }
+
+    .closing-card p {
+        font-size: 1rem;
+    }
+
+    .outline-star {
+        font-size: 30px;
+    }
+}
+
+@media (max-width: 900px) {
+    body {
+        background-position: center -100px;
+    }
+}
+
+@media (max-width: 600px) {
+    body {
+        background-position: center 0;
+    }
 }

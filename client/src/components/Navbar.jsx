@@ -10,13 +10,16 @@ function Navbar() {
     const [user, setUser] = useState(
         JSON.parse(localStorage.getItem("user") || "null")
     );
-    useEffect(() => {
-    const savedUser = localStorage.getItem("user");
 
-    setUser(
-        savedUser ? JSON.parse(savedUser) : null
-    );
-}, [location.pathname]);
+    const [menuOpen, setMenuOpen] = useState(false);
+
+    useEffect(() => {
+        const savedUser = localStorage.getItem("user");
+
+        setUser(
+            savedUser ? JSON.parse(savedUser) : null
+        );
+    }, [location.pathname]);
 
     const handleLogout = () => {
 
@@ -40,31 +43,38 @@ function Navbar() {
 
             </div>
 
-            <div className="menu">
+            <button
+                className="hamburger"
+                onClick={() => setMenuOpen(!menuOpen)}
+            >
+                ☰
+            </button>
+
+            <div className={`menu ${menuOpen ? "open" : ""}`}>
 
                 {user?.role === "company_admin" && (
                     <Link to="/add-user">
                         הוספת משתמש
                     </Link>
                 )}
+
                 {user?.role === "company_admin" && (
-                <Link to='/users'>
-                רשימת משתמשים
-                </Link>
-)}
+                    <Link to="/users">
+                        רשימת משתמשים
+                    </Link>
+                )}
+
                 {user && (
                     <>
-                        
-
                         <Link to="/orders">
                             רשימת הזמנות
                         </Link>
 
-                           {user.role === "customer" && (
-            <Link to="/orders/new">
-                הזמנה חדשה
-            </Link>
-        )}
+                        {user.role === "customer" && (
+                            <Link to="/orders/new">
+                                הזמנה חדשה
+                            </Link>
+                        )}
                     </>
                 )}
 
@@ -73,15 +83,11 @@ function Navbar() {
                 </Link>
 
                 {user ? (
-              <div className="user-section">
-    <Link to="/" onClick={handleLogout}>
-        התנתקות
-    </Link>
-
-    <span className="user-name">
-        שלום, {user.full_name || user.username}
-    </span>
-</div>
+                    <div className="user-section">
+                        <Link to="/" onClick={handleLogout}>
+                            התנתקות
+                        </Link>
+                    </div>
                 ) : (
                     <Link to="/">
                         התחברות
@@ -89,6 +95,12 @@ function Navbar() {
                 )}
 
             </div>
+
+            {user && (
+                <span className="user-name">
+                    שלום, {user.full_name || user.username}
+                </span>
+            )}
 
         </nav>
     );

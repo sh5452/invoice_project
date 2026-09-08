@@ -13,6 +13,7 @@ import { useNavigate } from "react-router-dom";
 function HomePage(){ 
   
   const navigate=useNavigate() 
+  const user = JSON.parse(localStorage.getItem("user") || "null");
  
   return ( 
     <div className="home-page"> 
@@ -50,7 +51,7 @@ function HomePage(){
             </div> 
    
           </div> 
-   
+   {user?.role === "customer" && (
           <div className="hero-buttons"> 
             <button 
               className="primary-btn" 
@@ -65,7 +66,8 @@ function HomePage(){
             >
               רשימת הזמנות
             </button> 
-          </div> 
+          </div> )}
+          
    
         </div> 
    
