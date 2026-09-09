@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import api from '../services/api';
 import { useParams, useNavigate } from 'react-router-dom'
@@ -9,6 +8,7 @@ function OrderDetails() {
     const { id } = useParams();
     const navigate = useNavigate();
     const currentUser = JSON.parse(localStorage.getItem('user') || 'null');
+
     const [orderData, setOrderData] = useState(null);
     const [isEditing, setIsEditing] = useState(false);
     const [drivers, setDrivers] = useState([]);
@@ -18,15 +18,18 @@ function OrderDetails() {
     const [deliveryNoteImages, setDeliveryNoteImages] = useState({});
     const [editingDeliveryNote, setEditingDeliveryNote] = useState(null);
 
-useEffect(() => {
-    console.log("LOADING DRIVERS");
 
-    loadOrder();
+    useEffect(() => {
+        console.log("LOADING DRIVERS");
 
-    if (currentUser?.role === "company_admin") {
-        loadDrivers();
-    }
-}, []);
+        loadOrder();
+
+        if (currentUser?.role === "company_admin") {
+            loadDrivers();
+        }
+    }, []);
+
+
     async function loadOrder() {
 
         try {
@@ -38,30 +41,36 @@ useEffect(() => {
             console.log("RETURN PAGE RESPONSE:", res.data);
             console.log("ORDER:", res.data.order);
             console.log("ITEMS:", res.data.items);
+
             console.log(
-    "DELIVERY NOTES FULL:",
-    JSON.stringify(res.data.delivery_notes, null, 2)
-);
+                "DELIVERY NOTES FULL:",
+                JSON.stringify(res.data.delivery_notes, null, 2)
+            );
+
             console.log("NOTES:", res.data.delivery_note?.notes);
 
 
             setOrderData(res.data);
             setSelectedStatus(res.data.order.status);
             setSelectedDriver(res.data.order.driver_id || "");
-const images = {};
 
-for (const note of res.data.delivery_notes || []) {
-    if (note.delivery_note_image) {
-        const imageRes = await api.get(
-            `/delivery-notes/${note.id}/image`,
-            { responseType: 'blob' }
-        );
 
-        images[note.id] = URL.createObjectURL(imageRes.data);
-    }
-}
+            const images = {};
 
-setDeliveryNoteImages(images);
+            for (const note of res.data.delivery_notes || []) {
+
+                if (note.delivery_note_image) {
+
+                    const imageRes = await api.get(
+                        `/delivery-notes/${note.id}/image`,
+                        { responseType: 'blob' }
+                    );
+
+                    images[note.id] = URL.createObjectURL(imageRes.data);
+                }
+            }
+
+            setDeliveryNoteImages(images);
 
         } catch (err) {
 
@@ -70,8 +79,11 @@ setDeliveryNoteImages(images);
         }
     }
 
+
     async function loadDrivers() {
+
         try {
+
             const res = await api.get('/drivers');
 
             console.log("DRIVERS:", res.data);
@@ -79,17 +91,23 @@ setDeliveryNoteImages(images);
             setDrivers(res.data);
 
         } catch (err) {
+
             console.error(err);
+
         }
     }
 
+
     async function assignDriver() {
+
         if (!selectedDriver) {
+
             alert("יש לבחור נהג");
             return;
         }
 
         try {
+
             const res = await api.patch(
                 `/orders/${id}/assign-driver`,
                 {
@@ -108,10 +126,13 @@ setDeliveryNoteImages(images);
             alert("הנהג שויך להזמנה בהצלחה");
 
         } catch (err) {
+
             console.error(err);
             alert("שגיאה בשיוך הנהג");
+
         }
     }
+
 
     function updateOrderField(field, value) {
 
@@ -123,6 +144,7 @@ setDeliveryNoteImages(images);
             }
         });
     }
+
 
     function updateItem(index, field, value) {
 
@@ -138,7 +160,10 @@ setDeliveryNoteImages(images);
             items: updatedItems
         });
     }
+
+
     async function deactivateOrder() {
+
         const confirmed = window.confirm(
             "האם אתה בטוח שברצונך להשבית את ההזמנה?"
         );
@@ -148,6 +173,7 @@ setDeliveryNoteImages(images);
         }
 
         try {
+
             const res = await api.patch(
                 `/orders/${id}/deactivate`
             );
@@ -167,11 +193,11 @@ setDeliveryNoteImages(images);
         }
     }
 
+
     async function saveOrder() {
 
         try {
 
-            // עדכון פרטי ההזמנה
             const orderResponse = await api.put(
                 `/orders/${id}`,
                 {
@@ -182,7 +208,7 @@ setDeliveryNoteImages(images);
                 }
             );
 
-            // עדכון המוצרים
+
             for (const item of orderData.items) {
 
                 await api.put(
@@ -194,6 +220,7 @@ setDeliveryNoteImages(images);
                 );
 
             }
+
 
             setOrderData({
                 ...orderData,
@@ -213,11 +240,67 @@ setDeliveryNoteImages(images);
         }
     }
 
+
+    async function saveDeliveryNote() {
+
+        try {
+
+            const formData = new FormData();
+
+            formData.append(
+                "delivery_note_number",
+                editingDeliveryNote.delivery_note_number
+            );
+
+            formData.append(
+                "received_by",
+                editingDeliveryNote.received_by
+            );
+
+            formData.append(
+                "notes",
+                editingDeliveryNote.notes
+            );
+
+            if (editingDeliveryNote.image) {
+
+                formData.append(
+                    "delivery_note_image",
+                    editingDeliveryNote.image
+                );
+            }
+
+
+            await api.put(
+                `/delivery-notes/${editingDeliveryNote.id}`,
+                formData
+            );
+
+
+            alert("תעודת המשלוח עודכנה בהצלחה");
+
+            setEditingDeliveryNote(null);
+
+            await loadOrder();
+
+        } catch (err) {
+
+            console.error(err);
+            console.error("RESPONSE:", err.response?.data);
+
+            alert("שגיאה בעדכון תעודת המשלוח");
+
+        }
+    }
+
+
     if (!orderData) {
         return <p>טוען הזמנה...</p>;
     }
-    
+
+
     async function saveStatus() {
+
         try {
 
             const res = await api.patch(
@@ -243,10 +326,14 @@ setDeliveryNoteImages(images);
         }
     }
 
+
     function cancelStatusEdit() {
+
         setSelectedStatus(orderData.order.status);
         setIsEditingStatus(false);
+
     }
+
 
     return (
 
@@ -255,52 +342,67 @@ setDeliveryNoteImages(images);
             <h2>
                 פרטי הזמנה מספר {orderData.order.order_number}
             </h2>
-{!isEditing && (
-    <>
-        {/* פעולות של לקוח בלבד */}
-        {currentUser?.role === 'customer' && (
-            <>
-                <button onClick={() => setIsEditing(true)}>
-                    עריכה
-                </button>
 
-                <button onClick={deactivateOrder}>
-                    השבת הזמנה
-                </button>
 
-                <button
-                    onClick={() => navigate(`/orders/${id}/return`)}
-                >
-                    הוספת החזרה
-                </button>
-            </>
-        )}
+            {!isEditing && (
+                <>
 
-        {/* תעודת משלוח - נהג בלבד */}
-        {currentUser?.role === 'driver' && (
-            <button
-                onClick={() => navigate(`/delivery-notes/new/${id}`)}
-            >
-                הוספת תעודת משלוח
-            </button>
-        )}
-    </>
-)}
+                    {/* פעולות של לקוח בלבד */}
+
+                    {currentUser?.role === 'customer' && (
+                        <>
+
+                            <button onClick={() => setIsEditing(true)}>
+                                עריכה
+                            </button>
+
+                            <button onClick={deactivateOrder}>
+                                השבת הזמנה
+                            </button>
+
+                            <button
+                                onClick={() => navigate(`/orders/${id}/return`)}
+                            >
+                                הוספת החזרה
+                            </button>
+
+                        </>
+                    )}
+
+
+                    {/* תעודת משלוח - נהג בלבד */}
+
+                    {currentUser?.role === 'driver' && (
+                        <button
+                            onClick={() => navigate(`/delivery-notes/new/${id}`)}
+                        >
+                            הוספת תעודת משלוח
+                        </button>
+                    )}
+
+                </>
+            )}
+
+
             {isEditing && (
                 <>
+
                     <button onClick={saveOrder}>
                         שמור שינויים
                     </button>
 
-                    <button onClick={() => {
-                        setIsEditing(false);
-                        loadOrder();
-                    }}>
+                    <button
+                        onClick={() => {
+                            setIsEditing(false);
+                            loadOrder();
+                        }}
+                    >
                         ביטול
                     </button>
 
                 </>
             )}
+
 
             {/* פרטי לקוח */}
 
@@ -309,8 +411,10 @@ setDeliveryNoteImages(images);
             {isEditing ? (
 
                 <>
+
                     <p>
                         שם:
+
                         <input
                             value={orderData.order.customer_name}
                             onChange={(e) =>
@@ -322,8 +426,10 @@ setDeliveryNoteImages(images);
                         />
                     </p>
 
+
                     <p>
                         טלפון:
+
                         <input
                             value={orderData.order.customer_phone}
                             onChange={(e) =>
@@ -335,8 +441,10 @@ setDeliveryNoteImages(images);
                         />
                     </p>
 
+
                     <p>
                         כתובת:
+
                         <input
                             value={orderData.order.customer_address}
                             onChange={(e) =>
@@ -347,11 +455,13 @@ setDeliveryNoteImages(images);
                             }
                         />
                     </p>
+
                 </>
 
             ) : (
 
                 <>
+
                     <p>
                         שם: {orderData.order.customer_name}
                     </p>
@@ -363,9 +473,11 @@ setDeliveryNoteImages(images);
                     <p>
                         כתובת: {orderData.order.customer_address}
                     </p>
+
                 </>
 
             )}
+
 
             {/* פרטי הזמנה */}
 
@@ -375,6 +487,7 @@ setDeliveryNoteImages(images);
 
                 <p>
                     מספר הזמנה:
+
                     <input
                         value={orderData.order.order_number}
                         onChange={(e) =>
@@ -394,103 +507,137 @@ setDeliveryNoteImages(images);
 
             )}
 
-         <h3>סטטוס הזמנה</h3>
 
-{!isEditingStatus ? (
+            {/* סטטוס הזמנה */}
 
-    <div>
+            <h3>סטטוס הזמנה</h3>
 
-        <p>
-            סטטוס: {orderData.order.status}
-        </p>
+            {!isEditingStatus ? (
 
-        {/* מנהל ועובד חברה */}
-        {(currentUser?.role === 'company_admin' ||
-          currentUser?.role === 'employee') && (
+                <div>
 
-            <button onClick={() => setIsEditingStatus(true)}>
-                שינוי סטטוס
-            </button>
-        )}
+                    <p>
+                        סטטוס: {orderData.order.status}
+                    </p>
 
-        {/* נהג */}
-        {currentUser?.role === 'driver' &&
-         (orderData.order.status === 'בטיפול' ||
-          orderData.order.status === 'נשלחה') && (
 
-          <button onClick={() => {
-    setSelectedStatus('סופקה');
-    setIsEditingStatus(true);
-}}>
-    סימון כסופקה
-</button>
-        )}
+                    {/* מנהל ועובד חברה */}
 
-    </div>
+                    {(currentUser?.role === 'company_admin' ||
+                      currentUser?.role === 'employee') && (
 
-) : (
+                        <button onClick={() => setIsEditingStatus(true)}>
+                            שינוי סטטוס
+                        </button>
 
-    <div>
+                    )}
 
-        <select
-            value={selectedStatus}
-            onChange={(e) => setSelectedStatus(e.target.value)}
-        >
 
-            {/* מנהל ועובד חברה */}
-            {(currentUser?.role === 'company_admin' ||
-              currentUser?.role === 'employee') && (
+                    {/* נהג */}
+
+                    {currentUser?.role === 'driver' &&
+                     (orderData.order.status === 'בטיפול' ||
+                      orderData.order.status === 'נשלחה') && (
+
+                        <button
+                            onClick={() => {
+                                setSelectedStatus('סופקה');
+                                setIsEditingStatus(true);
+                            }}
+                        >
+                            סימון כסופקה
+                        </button>
+
+                    )}
+
+                </div>
+
+            ) : (
+
+                <div>
+
+                    <select
+                        value={selectedStatus}
+                        onChange={(e) => setSelectedStatus(e.target.value)}
+                    >
+
+                        {/* מנהל ועובד חברה */}
+
+                        {(currentUser?.role === 'company_admin' ||
+                          currentUser?.role === 'employee') && (
+
+                            <>
+                                <option value="חדשה">חדשה</option>
+                                <option value="בטיפול">בטיפול</option>
+                                <option value="מחכה למלאי">מחכה למלאי</option>
+                                <option value="נשלחה">נשלחה</option>
+                            </>
+
+                        )}
+
+
+                        {/* נהג */}
+
+                        {currentUser?.role === 'driver' && (
+                            <option value="סופקה">סופקה</option>
+                        )}
+
+                    </select>
+
+
+                    <button onClick={saveStatus}>
+                        שמור
+                    </button>
+
+                    <button onClick={cancelStatusEdit}>
+                        ביטול
+                    </button>
+
+                </div>
+
+            )}
+
+
+            {/* הקצאת נהג */}
+
+            {currentUser?.role === 'company_admin' && (
 
                 <>
-                    <option value="חדשה">חדשה</option>
-                    <option value="בטיפול">בטיפול</option>
-                    <option value="מחכה למלאי">מחכה למלאי</option>
-                    <option value="נשלחה">נשלחה</option>
+
+                    <h3>נהג</h3>
+
+                    <select
+                        value={selectedDriver}
+                        onChange={(e) => setSelectedDriver(e.target.value)}
+                    >
+
+                        <option value="">
+                            בחר נהג
+                        </option>
+
+                        {drivers.map((driver) => (
+
+                            <option
+                                key={driver.id}
+                                value={driver.id}
+                            >
+                                {driver.full_name}
+                            </option>
+
+                        ))}
+
+                    </select>
+
+
+                    <button onClick={assignDriver}>
+                        שייך נהג
+                    </button>
+
                 </>
+
             )}
 
-            {/* נהג */}
-            {currentUser?.role === 'driver' && (
-                <option value="סופקה">סופקה</option>
-            )}
 
-        </select>
-
-        <button onClick={saveStatus}>
-            שמור
-        </button>
-
-        <button onClick={cancelStatusEdit}>
-            ביטול
-        </button>
-
-    </div>
-
-)}
-           {/* הקצאת נהג */}
-
-{currentUser?.role === 'company_admin' && (
-    <>
-        <h3>נהג</h3>
-
-        <select
-            value={selectedDriver}
-            onChange={(e) => setSelectedDriver(e.target.value)}
-        >
-            <option value="">בחר נהג</option>
-
-            {drivers.map((driver) => (
-                <option key={driver.id} value={driver.id}>
-                    {driver.full_name}
-                </option>
-            ))}
-        </select>
-
-        <button onClick={assignDriver}>
-            שייך נהג
-        </button>
-    </>
-)}
             {/* מוצרים */}
 
             <h3>מוצרים</h3>
@@ -507,11 +654,14 @@ setDeliveryNoteImages(images);
                         מק"ט: {item.sku}
                     </p>
 
+
                     {isEditing ? (
 
                         <>
+
                             <label>
                                 כמות:
+
                                 <input
                                     type="number"
                                     value={item.quantity}
@@ -523,10 +673,13 @@ setDeliveryNoteImages(images);
                                         )
                                     }
                                 />
+
                             </label>
+
 
                             <label>
                                 מחיר:
+
                                 <input
                                     type="number"
                                     value={item.price}
@@ -538,12 +691,15 @@ setDeliveryNoteImages(images);
                                         )
                                     }
                                 />
+
                             </label>
+
                         </>
 
                     ) : (
 
                         <>
+
                             <p>
                                 כמות: {item.quantity}
                             </p>
@@ -551,6 +707,7 @@ setDeliveryNoteImages(images);
                             <p>
                                 מחיר: {item.price}
                             </p>
+
                         </>
 
                     )}
@@ -561,215 +718,206 @@ setDeliveryNoteImages(images);
 
             ))}
 
-            {/* תעודת משלוח - צפייה בלבד */}
+
+            {/* תעודות משלוח */}
+
             {orderData.delivery_notes &&
-                orderData.delivery_notes.length > 0 && (
-
-                    <>
-                        <h3>תעודות משלוח</h3>
-
-                        {orderData.delivery_notes.map((note, index) => (
-
-                            <div key={note.id || index}>
-
-                                <p>
-                                    מספר: {note.delivery_note_number}
-                                </p>
-
-                                <p>
-                                    התקבל אצל: {note.received_by}
-                                </p>
-
-                                <p>
-                                    הערות: {note.notes}
-                                </p>
-                                <button
-   onClick={() => {
-    setEditingDeliveryNote({
-        id: note.id,
-        delivery_note_number: note.delivery_note_number,
-        received_by: note.received_by,
-        notes: note.notes || "",
-        image: null
-    });
-}}
->
-    עריכה
-</button>
-    {deliveryNoteImages[note.id] && (
-    <img
-        src={deliveryNoteImages[note.id]}
-        alt="תעודת משלוח"
-        className="delivery-note-image"
-    />
-)}
-{editingDeliveryNote?.id === note.id && (
-    <div className="delivery-note-edit">
-
-        <div className="form-group">
-            <label>מספר תעודת משלוח</label>
-
-            <input
-                type="text"
-                value={editingDeliveryNote.delivery_note_number}
-                onChange={(e) =>
-                    setEditingDeliveryNote({
-                        ...editingDeliveryNote,
-                        delivery_note_number: e.target.value
-                    })
-                }
-            />
-        </div>
-
-        <div className="form-group">
-            <label>התקבל אצל</label>
-
-            <input
-                type="text"
-                value={editingDeliveryNote.received_by}
-                onChange={(e) =>
-                    setEditingDeliveryNote({
-                        ...editingDeliveryNote,
-                        received_by: e.target.value
-                    })
-                }
-            />
-        </div>
-
-        <div className="form-group">
-            <label>הערות</label>
-
-            <textarea
-                value={editingDeliveryNote.notes}
-                onChange={(e) =>
-                    setEditingDeliveryNote({
-                        ...editingDeliveryNote,
-                        notes: e.target.value
-                    })
-                }
-            />
-        </div>
-
-        <div className="form-group">
-            <label>החלפת תעודת משלוח</label>
-
-            <input
-                type="file"
-                accept="image/*"
-                capture="environment"
-                onChange={(e) =>
-                    setEditingDeliveryNote({
-                        ...editingDeliveryNote,
-                        image: e.target.files[0]
-                    })
-                }
-            />
-        </div>
-
-        <button type="button">
-            שמור שינויים
-        </button>
-
-        <button
-            type="button"
-            onClick={() => setEditingDeliveryNote(null)}
-        >
-            ביטול
-        </button>
-
-    </div>
-)}
-
-                            </div>
-
-                        ))}
-
-                    </>
-
-
-
-
-                )}
-                {editingDeliveryNote?.id === note.id && (
-    <div className="delivery-note-edit">
-
-        <div className="form-group">
-            <label>מספר תעודת משלוח</label>
-
-            <input
-                type="text"
-                value={editingDeliveryNote.delivery_note_number}
-                onChange={(e) =>
-                    setEditingDeliveryNote({
-                        ...editingDeliveryNote,
-                        delivery_note_number: e.target.value
-                    })
-                }
-            />
-        </div>
-
-        <div className="form-group">
-            <label>התקבל אצל</label>
-
-            <input
-                type="text"
-                value={editingDeliveryNote.received_by}
-                onChange={(e) =>
-                    setEditingDeliveryNote({
-                        ...editingDeliveryNote,
-                        received_by: e.target.value
-                    })
-                }
-            />
-        </div>
-
-        <div className="form-group">
-            <label>הערות</label>
-
-            <textarea
-                value={editingDeliveryNote.notes}
-                onChange={(e) =>
-                    setEditingDeliveryNote({
-                        ...editingDeliveryNote,
-                        notes: e.target.value
-                    })
-                }
-            />
-        </div>
-
-        <div className="form-group">
-            <label>החלפת תעודת משלוח</label>
-
-            <input
-                type="file"
-                accept="image/*"
-                capture="environment"
-                onChange={(e) =>
-                    setEditingDeliveryNote({
-                        ...editingDeliveryNote,
-                        image: e.target.files[0]
-                    })
-                }
-            />
-        </div>
-<button type="button" onClick={saveDeliveryNote}>
-    שמור שינויים
-</button>
-
-        <button
-            type="button"
-            onClick={() => setEditingDeliveryNote(null)}
-        >
-            ביטול
-        </button>
-
-    </div>
-)}
-            {/* החזרות - צפייה בלבד */}
-
-            {orderData.returns && orderData.returns.length > 0 && (
+             orderData.delivery_notes.length > 0 && (
 
                 <>
+
+                    <h3>תעודות משלוח</h3>
+
+
+                    {orderData.delivery_notes.map((note, index) => (
+
+                        <div key={note.id || index}>
+
+                            <p>
+                                מספר: {note.delivery_note_number}
+                            </p>
+
+                            <p>
+                                התקבל אצל: {note.received_by}
+                            </p>
+
+                            <p>
+                                הערות: {note.notes}
+                            </p>
+
+
+                            {/* כפתור עריכה */}
+
+                            {currentUser?.role === 'driver' && (
+
+                                <button
+                                    type="button"
+                                    onClick={() => {
+
+                                        setEditingDeliveryNote({
+                                            id: note.id,
+                                            delivery_note_number:
+                                                note.delivery_note_number,
+                                            received_by:
+                                                note.received_by,
+                                            notes:
+                                                note.notes || "",
+                                            image: null
+                                        });
+
+                                    }}
+                                >
+                                    עריכה
+                                </button>
+
+                            )}
+
+
+                            {/* תמונת תעודת משלוח */}
+
+                            {deliveryNoteImages[note.id] && (
+
+                                <img
+                                    src={deliveryNoteImages[note.id]}
+                                    alt="תעודת משלוח"
+                                    className="delivery-note-image"
+                                />
+
+                            )}
+
+
+                            {/* טופס עריכת תעודת משלוח */}
+
+                            {editingDeliveryNote?.id === note.id && (
+
+                                <div className="delivery-note-edit">
+
+                                    <div className="form-group">
+
+                                        <label>
+                                            מספר תעודת משלוח
+                                        </label>
+
+                                        <input
+                                            type="text"
+                                            value={
+                                                editingDeliveryNote.delivery_note_number
+                                            }
+                                            onChange={(e) =>
+                                                setEditingDeliveryNote({
+                                                    ...editingDeliveryNote,
+                                                    delivery_note_number:
+                                                        e.target.value
+                                                })
+                                            }
+                                        />
+
+                                    </div>
+
+
+                                    <div className="form-group">
+
+                                        <label>
+                                            התקבל אצל
+                                        </label>
+
+                                        <input
+                                            type="text"
+                                            value={
+                                                editingDeliveryNote.received_by
+                                            }
+                                            onChange={(e) =>
+                                                setEditingDeliveryNote({
+                                                    ...editingDeliveryNote,
+                                                    received_by:
+                                                        e.target.value
+                                                })
+                                            }
+                                        />
+
+                                    </div>
+
+
+                                    <div className="form-group">
+
+                                        <label>
+                                            הערות
+                                        </label>
+
+                                        <textarea
+                                            value={
+                                                editingDeliveryNote.notes
+                                            }
+                                            onChange={(e) =>
+                                                setEditingDeliveryNote({
+                                                    ...editingDeliveryNote,
+                                                    notes: e.target.value
+                                                })
+                                            }
+                                        />
+
+                                    </div>
+
+
+                                    <div className="form-group">
+
+                                        <label>
+                                            החלפת תעודת משלוח
+                                        </label>
+
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            capture="environment"
+                                            onChange={(e) =>
+                                                setEditingDeliveryNote({
+                                                    ...editingDeliveryNote,
+                                                    image:
+                                                        e.target.files[0]
+                                                })
+                                            }
+                                        />
+
+                                    </div>
+
+
+                                    <button
+                                        type="button"
+                                        onClick={saveDeliveryNote}
+                                    >
+                                        שמור שינויים
+                                    </button>
+
+
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            setEditingDeliveryNote(null)
+                                        }
+                                    >
+                                        ביטול
+                                    </button>
+
+                                </div>
+
+                            )}
+
+                        </div>
+
+                    ))}
+
+                </>
+
+            )}
+
+
+            {/* החזרות - צפייה בלבד */}
+
+            {orderData.returns &&
+             orderData.returns.length > 0 && (
+
+                <>
+
                     <h3>החזרות</h3>
 
                     {orderData.returns.map((returnItem, index) => (
@@ -788,28 +936,32 @@ setDeliveryNoteImages(images);
 
                     ))}
 
+
                     <h4>פריטים שהוחזרו:</h4>
 
+
                     {orderData.returned_items &&
-                        orderData.returned_items.length > 0 &&
-                        orderData.returned_items.map((item, index) => (
+                     orderData.returned_items.length > 0 &&
+                     orderData.returned_items.map((item, index) => (
 
-                            <p 
-    className="returned-item"
-    key={`${item.return_id}-${item.order_item_id}-${index}`}>
-                                {item.product_name}
-                                {" | "}
-                                מק"ט: {item.sku}
-                                {" | "}
-                                כמות שהוחזרה: {item.quantity_returned}
-                            </p>
+                        <p
+                            className="returned-item"
+                            key={`${item.return_id}-${item.order_item_id}-${index}`}
+                        >
+                            {item.product_name}
+                            {" | "}
+                            מק"ט: {item.sku}
+                            {" | "}
+                            כמות שהוחזרה: {item.quantity_returned}
+                        </p>
 
-                        ))
-                    }
+                    ))}
 
                 </>
 
             )}
+
+
             <p>
                 מצב: {orderData.order.is_active ? "פעילה" : "מושבתת"}
             </p>
