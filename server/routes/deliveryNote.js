@@ -108,6 +108,52 @@ router.get(
     }
 );
 
+// =========================
+// הצגת תמונת תעודת משלוח
+// =========================
+
+router.get(
+    '/:id/image',
+    authenticateToken,
+    authorizeRoles(
+        'company_admin',
+        'employee',
+        'driver',
+        'customer'
+    ),
+    async (req, res) => {
+
+        try {
+
+            const { id } = req.params;
+
+            const result = await pool.query(
+                `
+                SELECT delivery_note_image
+                FROM delivery_notes
+                WHERE id = $1
+                `,
+                [id]
+            );
+
+            if (
+                result.rows.length === 0 ||
+                !result.rows[0].delivery_note_image
+            ) {
+                return res.status(404).send('Image not found');
+            }
+
+            res.set('Content-Type', 'image/png');
+            res.send(result.rows[0].delivery_note_image);
+
+        } catch (err) {
+
+            console.error(err);
+            res.status(500).send('ERROR fetching image');
+
+        }
+    }
+);
 
 // =========================
 // הצגת תעודת משלוח לפי ID
