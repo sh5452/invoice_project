@@ -33,7 +33,7 @@ router.post(
                 received_by,
                 notes
             } = req.body;
-            
+            console.log("IMAGE BUFFER SIZE:", req.file?.buffer?.length);
 
             const result = await pool.query(
                 `
@@ -57,7 +57,10 @@ VALUES ($1, $2, NOW(), $3, $4, $5)
     req.file ? req.file.buffer : null
 ]
             );
-
+console.log(
+    "SAVED IMAGE SIZE:",
+    result.rows[0].delivery_note_image?.length
+)
             res.json(result.rows[0]);
 
         } catch (err) {
