@@ -16,6 +16,7 @@ function OrderDetails() {
     const [selectedStatus, setSelectedStatus] = useState("");
     const [isEditingStatus, setIsEditingStatus] = useState(false);
     const [deliveryNoteImages, setDeliveryNoteImages] = useState({});
+    const [editingDeliveryNote, setEditingDeliveryNote] = useState(null);
 
 useEffect(() => {
     console.log("LOADING DRIVERS");
@@ -583,10 +584,15 @@ setDeliveryNoteImages(images);
                                     הערות: {note.notes}
                                 </p>
                                 <button
-    onClick={() => {
-        // בהמשך נפתח כאן את מצב העריכה
-        console.log("עריכת תעודה:", note.id);
-    }}
+   onClick={() => {
+    setEditingDeliveryNote({
+        id: note.id,
+        delivery_note_number: note.delivery_note_number,
+        received_by: note.received_by,
+        notes: note.notes || "",
+        image: null
+    });
+}}
 >
     עריכה
 </button>
@@ -596,6 +602,82 @@ setDeliveryNoteImages(images);
         alt="תעודת משלוח"
         className="delivery-note-image"
     />
+)}
+{editingDeliveryNote?.id === note.id && (
+    <div className="delivery-note-edit">
+
+        <div className="form-group">
+            <label>מספר תעודת משלוח</label>
+
+            <input
+                type="text"
+                value={editingDeliveryNote.delivery_note_number}
+                onChange={(e) =>
+                    setEditingDeliveryNote({
+                        ...editingDeliveryNote,
+                        delivery_note_number: e.target.value
+                    })
+                }
+            />
+        </div>
+
+        <div className="form-group">
+            <label>התקבל אצל</label>
+
+            <input
+                type="text"
+                value={editingDeliveryNote.received_by}
+                onChange={(e) =>
+                    setEditingDeliveryNote({
+                        ...editingDeliveryNote,
+                        received_by: e.target.value
+                    })
+                }
+            />
+        </div>
+
+        <div className="form-group">
+            <label>הערות</label>
+
+            <textarea
+                value={editingDeliveryNote.notes}
+                onChange={(e) =>
+                    setEditingDeliveryNote({
+                        ...editingDeliveryNote,
+                        notes: e.target.value
+                    })
+                }
+            />
+        </div>
+
+        <div className="form-group">
+            <label>החלפת תעודת משלוח</label>
+
+            <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={(e) =>
+                    setEditingDeliveryNote({
+                        ...editingDeliveryNote,
+                        image: e.target.files[0]
+                    })
+                }
+            />
+        </div>
+
+        <button type="button">
+            שמור שינויים
+        </button>
+
+        <button
+            type="button"
+            onClick={() => setEditingDeliveryNote(null)}
+        >
+            ביטול
+        </button>
+
+    </div>
 )}
 
                             </div>
