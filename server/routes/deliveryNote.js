@@ -25,13 +25,15 @@ router.post(
 
         try {
 
+        console.log("BODY:", req.body);
+        console.log("FILE:", req.file);
             const {
                 order_id,
                 delivery_note_number,
                 received_by,
                 notes
             } = req.body;
-            console.log("IMAGE:", req.file);
+            
 
             const result = await pool.query(
                 `
