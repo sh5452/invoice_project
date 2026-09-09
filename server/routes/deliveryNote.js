@@ -72,6 +72,61 @@ console.log(
     }
 );
 
+// =========================
+// עריכת תעודת משלוח
+// =========================
+
+router.put(
+    '/:id',
+    authenticateToken,
+    authorizeRoles('driver', 'company_admin'),
+    upload.single('delivery_note_image'),
+    async (req, res) => {
+
+        try {
+
+            const { id } = req.params;
+
+            const {
+                delivery_note_number,
+                received_by,
+                notes
+            } = req.body;
+
+            const result = await pool.query(
+                `
+                UPDATE delivery_notes
+                SET
+                    delivery_note_number = $1,
+                    received_by = $2,
+                    notes = $3,
+                    delivery_note_image = COALESCE($4, delivery_note_image)
+                WHERE id = $5
+                RETURNING *
+                `,
+                [
+                    delivery_note_number,
+                    received_by,
+                    notes,
+                    req.file ? req.file.buffer : null,
+                    id
+                ]
+            );
+
+            if (result.rows.length === 0) {
+                return res.status(404).send('Delivery note not found');
+            }
+
+            res.json(result.rows[0]);
+
+        } catch (err) {
+
+            console.error(err);
+            res.status(500).send('ERROR updating delivery note');
+
+        }
+    }
+);
 
 // =========================
 // הצגת כל תעודות המשלוח
