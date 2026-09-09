@@ -582,6 +582,14 @@ setDeliveryNoteImages(images);
                                 <p>
                                     הערות: {note.notes}
                                 </p>
+                                <button
+    onClick={() => {
+        // בהמשך נפתח כאן את מצב העריכה
+        console.log("עריכת תעודה:", note.id);
+    }}
+>
+    עריכה
+</button>
     {deliveryNoteImages[note.id] && (
     <img
         src={deliveryNoteImages[note.id]}
