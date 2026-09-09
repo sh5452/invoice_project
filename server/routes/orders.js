@@ -223,6 +223,8 @@ router.get(
     notes,
     delivery_note_image
 FROM delivery_notes
+WHERE order_id = $1
+ORDER BY delivery_at
                 `,
                 [id]
             );
