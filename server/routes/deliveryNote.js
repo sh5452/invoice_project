@@ -37,23 +37,25 @@ router.post(
 
             const result = await pool.query(
                 `
-                INSERT INTO delivery_notes
-                (
-                    order_id,
-                    delivery_note_number,
-                    delivery_at,
-                    received_by,
-                    notes
-                )
-                VALUES ($1, $2, NOW(), $3, $4)
+              INSERT INTO delivery_notes
+(
+    order_id,
+    delivery_note_number,
+    delivery_at,
+    received_by,
+    notes,
+    delivery_note_image
+)
+VALUES ($1, $2, NOW(), $3, $4, $5)
                 RETURNING *
                 `,
-                [
-                    order_id,
-                    delivery_note_number,
-                    received_by,
-                    notes
-                ]
+              [
+    order_id,
+    delivery_note_number,
+    received_by,
+    notes,
+    req.file ? req.file.buffer : null
+]
             );
 
             res.json(result.rows[0]);
