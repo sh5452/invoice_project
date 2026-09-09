@@ -37,7 +37,10 @@ useEffect(() => {
             console.log("RETURN PAGE RESPONSE:", res.data);
             console.log("ORDER:", res.data.order);
             console.log("ITEMS:", res.data.items);
-            console.log("DELIVERY NOTES:", res.data.delivery_notes);
+            console.log(
+    "DELIVERY NOTES FULL:",
+    JSON.stringify(res.data.delivery_notes, null, 2)
+);
             console.log("NOTES:", res.data.delivery_note?.notes);
 
 
