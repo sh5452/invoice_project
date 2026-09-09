@@ -690,6 +690,81 @@ setDeliveryNoteImages(images);
 
 
                 )}
+                {editingDeliveryNote?.id === note.id && (
+    <div className="delivery-note-edit">
+
+        <div className="form-group">
+            <label>מספר תעודת משלוח</label>
+
+            <input
+                type="text"
+                value={editingDeliveryNote.delivery_note_number}
+                onChange={(e) =>
+                    setEditingDeliveryNote({
+                        ...editingDeliveryNote,
+                        delivery_note_number: e.target.value
+                    })
+                }
+            />
+        </div>
+
+        <div className="form-group">
+            <label>התקבל אצל</label>
+
+            <input
+                type="text"
+                value={editingDeliveryNote.received_by}
+                onChange={(e) =>
+                    setEditingDeliveryNote({
+                        ...editingDeliveryNote,
+                        received_by: e.target.value
+                    })
+                }
+            />
+        </div>
+
+        <div className="form-group">
+            <label>הערות</label>
+
+            <textarea
+                value={editingDeliveryNote.notes}
+                onChange={(e) =>
+                    setEditingDeliveryNote({
+                        ...editingDeliveryNote,
+                        notes: e.target.value
+                    })
+                }
+            />
+        </div>
+
+        <div className="form-group">
+            <label>החלפת תעודת משלוח</label>
+
+            <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={(e) =>
+                    setEditingDeliveryNote({
+                        ...editingDeliveryNote,
+                        image: e.target.files[0]
+                    })
+                }
+            />
+        </div>
+<button type="button" onClick={saveDeliveryNote}>
+    שמור שינויים
+</button>
+
+        <button
+            type="button"
+            onClick={() => setEditingDeliveryNote(null)}
+        >
+            ביטול
+        </button>
+
+    </div>
+)}
             {/* החזרות - צפייה בלבד */}
 
             {orderData.returns && orderData.returns.length > 0 && (
