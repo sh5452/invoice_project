@@ -15,6 +15,7 @@ function OrderDetails() {
     const [selectedDriver, setSelectedDriver] = useState("");
     const [selectedStatus, setSelectedStatus] = useState("");
     const [isEditingStatus, setIsEditingStatus] = useState(false);
+    const [deliveryNoteImages, setDeliveryNoteImages] = useState({});
 
 useEffect(() => {
     console.log("LOADING DRIVERS");
@@ -43,7 +44,20 @@ useEffect(() => {
             setOrderData(res.data);
             setSelectedStatus(res.data.order.status);
             setSelectedDriver(res.data.order.driver_id || "");
+const images = {};
 
+for (const note of res.data.delivery_notes || []) {
+    if (note.delivery_note_image) {
+        const imageRes = await api.get(
+            `/delivery-notes/${note.id}/image`,
+            { responseType: 'blob' }
+        );
+
+        images[note.id] = URL.createObjectURL(imageRes.data);
+    }
+}
+
+setDeliveryNoteImages(images);
 
         } catch (err) {
 
@@ -565,6 +579,13 @@ useEffect(() => {
                                 <p>
                                     הערות: {note.notes}
                                 </p>
+    {deliveryNoteImages[note.id] && (
+    <img
+        src={deliveryNoteImages[note.id]}
+        alt="תעודת משלוח"
+        className="delivery-note-image"
+    />
+)}
 
                             </div>
 
