@@ -2,13 +2,16 @@ const express = require('express');
 const router = express.Router();
 
 const pool = require('../db');
+const multer = require('multer');
 
 const {
     authenticateToken,
     authorizeRoles
 } = require('../middleware/auth');
 
-
+const upload = multer({
+    storage: multer.memoryStorage()
+});
 // =========================
 // יצירת תעודת משלוח
 // =========================
@@ -17,6 +20,7 @@ router.post(
     '/',
     authenticateToken,
     authorizeRoles('driver', 'company_admin'),
+     upload.single('delivery_note_image'),
     async (req, res) => {
 
         try {
@@ -27,6 +31,7 @@ router.post(
                 received_by,
                 notes
             } = req.body;
+            console.log("IMAGE:", req.file);
 
             const result = await pool.query(
                 `

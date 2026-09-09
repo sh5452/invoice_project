@@ -7,6 +7,8 @@ function DeliveryNotePage(){
     const { orderId } = useParams();
     const navigate = useNavigate();
 
+    const [deliveryNoteImage, setDeliveryNoteImage] = useState(null);
+
     const [deliveryNote, setDeliveryNote] = useState({
         delivery_note_number: "",
         received_by: "",
@@ -17,13 +19,19 @@ function DeliveryNotePage(){
         e.preventDefault();
 
         try {
+const formData = new FormData();
 
-            await api.post('/delivery-notes', {
-                order_id: orderId,
-                delivery_note_number: deliveryNote.delivery_note_number,
-                received_by: deliveryNote.received_by,
-                notes: deliveryNote.notes
-            });
+formData.append("order_id", orderId);
+formData.append("delivery_note_number", deliveryNote.delivery_note_number);
+formData.append("received_by", deliveryNote.received_by);
+formData.append("notes", deliveryNote.notes);
+
+if (deliveryNoteImage) {
+    formData.append("delivery_note_image", deliveryNoteImage);
+}
+            await api.post('/delivery-notes',
+               formData
+            );
 
             alert("תעודת המשלוח נשמרה בהצלחה");
 
@@ -44,6 +52,16 @@ function DeliveryNotePage(){
         <h1>תעודת משלוח</h1>
 
         <form onSubmit={handleSubmit}>
+            <div className="form-group">
+    <label>תעודת משלוח</label>
+
+    <input
+        type="file"
+        accept="image/*"
+        capture="environment"
+        onChange={(e) => setDeliveryNoteImage(e.target.files[0])}
+    />
+</div>
 
             <div className="form-group">
                 <label>מספר תעודת משלוח</label>
