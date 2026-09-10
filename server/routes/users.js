@@ -26,14 +26,15 @@ router.post(
         try {
 
             const {
-                username,
-                fullName,
-                email,
-                role,
-                password
-            } = req.body;
+    username,
+    fullName,
+    email,
+    company,
+    role,
+    password
+} = req.body;
 
-            if (!username || !fullName || !email || !role || !password) {
+            if (!username || !fullName || !email || !role || !password || !company) {
                 return res.status(400).send('כל השדות הם חובה');
             }
 
@@ -43,7 +44,7 @@ router.post(
         .send('מנהל חברה לא יכול ליצור מנהל נוסף');
 }
 
-            const company = req.user.company;
+            
 
             const passwordHash = await bcrypt.hash(password, 10);
 
