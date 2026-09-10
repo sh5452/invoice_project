@@ -24,6 +24,7 @@ function App() {
    console.log("USER IN APP:", JSON.parse(localStorage.getItem("user") || "null"));
 
     const [showSessionWarning, setShowSessionWarning] = useState(false);
+    const [isRefreshingSession, setIsRefreshingSession] = useState(false);
 const [user, setUser] = useState(
     JSON.parse(localStorage.getItem("user") || "null")
 );
@@ -126,7 +127,7 @@ setUser(savedUser ? JSON.parse(savedUser) : null);
     const handleStayLoggedIn = async () => {
 
         try {
-
+setIsRefreshingSession(true);
             const token = localStorage.getItem("token");
 
             if (!token) {
@@ -170,16 +171,14 @@ setUser(savedUser ? JSON.parse(savedUser) : null);
 
 
         } catch (error) {
-
-            console.error("Refresh token error:", error);
-
-            localStorage.removeItem("token");
-            localStorage.removeItem("user");
-
-            window.location.href = "/";
-
-        }
-    };
+        console.error("Refresh token error:", error);
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        window.location.href = "/";
+    } finally {
+        setIsRefreshingSession(false);
+    }
+};
 
 
     // התנתקות
@@ -285,12 +284,13 @@ setUser(savedUser ? JSON.parse(savedUser) : null);
 
                             <div className="session-buttons">
 
-                                <button
-                                    className="stay-button"
-                                    onClick={handleStayLoggedIn}
-                                >
-                                    הישאר מחובר
-                                </button>
+                               <button
+    className="stay-button"
+    onClick={handleStayLoggedIn}
+    disabled={isRefreshingSession}
+>
+    {isRefreshingSession ? "מעדכן התחברות..." : "הישאר מחובר"}
+</button>
 
                                 <button
                                     className="logout-button"

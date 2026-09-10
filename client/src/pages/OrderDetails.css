@@ -8,4 +8,8 @@
     height: auto;
     margin: 15px auto;
     border-radius: 10px;
+
+}
+input[type="file"] {
+    color: white;
 }

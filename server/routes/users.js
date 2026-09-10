@@ -26,25 +26,33 @@ router.post(
         try {
 
             const {
-    username,
-    fullName,
-    email,
-    company,
-    role,
-    password
-} = req.body;
+                username,
+                fullName,
+                email,
+                company,
+                role,
+                password
+            } = req.body;
 
             if (!username || !fullName || !email || !role || !password || !company) {
                 return res.status(400).send('כל השדות הם חובה');
             }
 
-           if (role === 'company_admin') {
-    return res
-        .status(403)
-        .send('מנהל חברה לא יכול ליצור מנהל נוסף');
-}
+            if (role === 'company_admin') {
+                return res
+                    .status(403)
+                    .send('מנהל חברה לא יכול ליצור מנהל נוסף');
+            }
 
-            
+            // לקוח מקבל את החברה שהוזנה בטופס.
+            // עובד או נהג מקבלים את החברה של המנהל שיצר אותם.
+            let userCompany;
+
+            if (role === 'customer') {
+                userCompany = company;
+            } else {
+                userCompany = req.user.company;
+            }
 
             const passwordHash = await bcrypt.hash(password, 10);
 
@@ -74,33 +82,32 @@ router.post(
                     username,
                     fullName,
                     email,
-                    company,
+                    userCompany,
                     role,
                     passwordHash
                 ]
             );
 
-       console.log("USER CREATED:", result.rows[0]);
-console.log("BEFORE RESPONSE - HEADERS SENT:", res.headersSent);
+            console.log("USER CREATED:", result.rows[0]);
+            console.log("BEFORE RESPONSE - HEADERS SENT:", res.headersSent);
 
-return res.status(201).json(result.rows[0]);
-           
+            return res.status(201).json(result.rows[0]);
 
         } catch (err) {
 
-        console.error("ADD USER ERROR:", err);
+            console.error("ADD USER ERROR:", err);
 
-    if (res.headersSent) {
-        return;
-    }
+            if (res.headersSent) {
+                return;
+            }
 
-    if (err.code === '23505') {
-        return res
-            .status(400)
-            .send('שם המשתמש או האימייל כבר קיימים');
-    }
+            if (err.code === '23505') {
+                return res
+                    .status(400)
+                    .send('שם המשתמש או האימייל כבר קיימים');
+            }
 
-    return res.status(500).send('Error creating user');
+            return res.status(500).send('Error creating user');
         }
     }
 );
