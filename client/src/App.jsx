@@ -128,6 +128,7 @@ setUser(savedUser ? JSON.parse(savedUser) : null);
 
         try {
 setIsRefreshingSession(true);
+console.log("LOADING START");
             const token = localStorage.getItem("token");
 
             if (!token) {
@@ -161,6 +162,7 @@ setIsRefreshingSession(true);
 
             // סגירת חלון ההתראה
             setShowSessionWarning(false);
+            console.log("LOADING END");
 
 
             // הפעלת טיימר חדש
