@@ -291,7 +291,14 @@ console.log("LOADING START");
     onClick={handleStayLoggedIn}
     disabled={isRefreshingSession}
 >
-    {isRefreshingSession ? "מעדכן התחברות..." : "הישאר מחובר"}
+    {isRefreshingSession ? (
+    <>
+        <span className="loading-spinner"></span>
+        מעדכן התחברות...
+    </>
+) : (
+    "הישאר מחובר"
+)}
 </button>
 
                                 <button

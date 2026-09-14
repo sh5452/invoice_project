@@ -128,7 +128,7 @@ app.post('/login', async (req, res) => {
             },
             process.env.JWT_SECRET,
             {
-               expiresIn: '1m'
+               expiresIn: '2h'
             }
         );
 
@@ -191,7 +191,7 @@ app.post('/refresh-token', authenticateRefreshToken, async (req, res) => {
             },
             process.env.JWT_SECRET,
             {
-                expiresIn: '1m'
+                expiresIn: '2h'
             }
         );
 
