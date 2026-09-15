@@ -43,6 +43,7 @@ function AddUserPage() {
                 const response = await api.get('/companies');
 
                 setCompanies(response.data);
+                console.log("COMPANIES:", response.data);
 
             } catch (err) {
 
