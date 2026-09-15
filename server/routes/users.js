@@ -36,16 +36,23 @@ router.post(
             } = req.body;
 
 
-            if (
-                !username ||
-                !fullName ||
-                !email ||
-                !role ||
-                !password ||
-                !companyId
-            ) {
-                return res.status(400).send('כל השדות הם חובה');
-            }
+          if (
+    !username ||
+    !fullName ||
+    !email ||
+    !role ||
+    !password
+) {
+    return res.status(400).send('כל השדות הם חובה');
+}
+
+
+if (
+    req.user.role === 'super_admin' &&
+    !companyId
+) {
+    return res.status(400).send('יש לבחור חברה');
+}
 
 
             // מנהל חברה לא יכול ליצור מנהל חברה נוסף
