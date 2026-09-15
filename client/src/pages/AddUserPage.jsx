@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import './AddUserPage.css';
 import api from '../services/api';
 import { useNavigate } from 'react-router-dom';
-import './UserPage.css'
+import './UserPage.css';
 
 
 function AddUserPage() {
@@ -18,6 +18,13 @@ function AddUserPage() {
 
 
     const [companies, setCompanies] = useState([]);
+
+    const [showNewCompanyFor, setShowNewCompanyFor] =
+        useState(null);
+
+    const [newCompanyName, setNewCompanyName] =
+        useState('');
+
 
     const [user, setUser] = useState({
         username: "",
@@ -43,7 +50,6 @@ function AddUserPage() {
                 const response = await api.get('/companies');
 
                 setCompanies(response.data);
-                console.log("COMPANIES:", response.data);
 
             } catch (err) {
 
@@ -82,6 +88,78 @@ function AddUserPage() {
         }
 
     }, [isSuperAdmin, currentUser?.company_id]);
+
+
+    // =========================
+    // הוספת חברה חדשה
+    // =========================
+
+    const handleAddCompany = async (type) => {
+
+        if (!newCompanyName.trim()) {
+
+            alert('יש להזין שם חברה');
+
+            return;
+        }
+
+
+        try {
+
+            const response = await api.post(
+                '/companies',
+                {
+                    name: newCompanyName.trim()
+                }
+            );
+
+
+            const newCompany = response.data;
+
+
+            setCompanies(prev => [
+                ...prev,
+                newCompany
+            ]);
+
+
+            if (type === 'company') {
+
+                setUser(prev => ({
+                    ...prev,
+                    companyId: newCompany.id
+                }));
+
+            }
+
+
+            if (type === 'customerCompany') {
+
+                setUser(prev => ({
+                    ...prev,
+                    customerCompanyId: newCompany.id
+                }));
+
+            }
+
+
+            setNewCompanyName('');
+
+            setShowNewCompanyFor(null);
+
+
+        } catch (err) {
+
+            console.error(err);
+
+            alert(
+                err.response?.data ||
+                'שגיאה בהוספת החברה'
+            );
+
+        }
+
+    };
 
 
     // =========================
@@ -233,53 +311,100 @@ function AddUserPage() {
 
                     <label>חברה</label>
 
-                    {isSuperAdmin ? (
+                    <div className="company-select-row">
 
-                        <select
-                            value={user.companyId}
-                            onChange={(e) =>
-                                setUser({
-                                    ...user,
-                                    companyId: e.target.value
-                                })
-                            }
+                        {isSuperAdmin ? (
+
+                            <select
+                                value={user.companyId}
+                                onChange={(e) =>
+                                    setUser({
+                                        ...user,
+                                        companyId: e.target.value
+                                    })
+                                }
+                            >
+
+                                <option value="">
+                                    בחר חברה
+                                </option>
+
+                                {companies
+                                    .filter(
+                                        company =>
+                                            company.name !== 'SYSTEM'
+                                    )
+                                    .map(company => (
+
+                                        <option
+                                            key={company.id}
+                                            value={company.id}
+                                        >
+                                            {company.name}
+                                        </option>
+
+                                    ))}
+
+                            </select>
+
+                        ) : (
+
+                            <input
+                                type="text"
+                                value={
+                                    companies.find(
+                                        company =>
+                                            company.id ===
+                                            Number(user.companyId)
+                                    )?.name || ''
+                                }
+                                readOnly
+                            />
+
+                        )}
+
+
+                        <button
+                            type="button"
+                            className="add-company-button"
+                            onClick={() => {
+
+                                setShowNewCompanyFor('company');
+                                setNewCompanyName('');
+
+                            }}
                         >
+                            +
+                        </button>
 
-                            <option value="">
-                                בחר חברה
-                            </option>
+                    </div>
 
-                            {companies
-                                .filter(
-                                    company =>
-                                        company.name !== 'SYSTEM'
-                                )
-                                .map(company => (
 
-                                    <option
-                                        key={company.id}
-                                        value={company.id}
-                                    >
-                                        {company.name}
-                                    </option>
+                    {showNewCompanyFor === 'company' && (
 
-                                ))}
+                        <div className="new-company-box">
 
-                        </select>
+                            <input
+                                type="text"
+                                placeholder="שם החברה החדשה"
+                                value={newCompanyName}
+                                onChange={(e) =>
+                                    setNewCompanyName(
+                                        e.target.value
+                                    )
+                                }
+                            />
 
-                    ) : (
+                            <button
+                                type="button"
+                                onClick={() =>
+                                    handleAddCompany('company')
+                                }
+                            >
+                                הוסף חברה
+                            </button>
 
-                        <input
-                            type="text"
-                            value={
-                                companies.find(
-                                    company =>
-                                        company.id ===
-                                        Number(user.companyId)
-                                )?.name || ''
-                            }
-                            readOnly
-                        />
+                        </div>
 
                     )}
 
@@ -294,38 +419,93 @@ function AddUserPage() {
 
                         <label>חברת הלקוח</label>
 
-                        <select
-                            value={user.customerCompanyId}
-                            onChange={(e) =>
-                                setUser({
-                                    ...user,
-                                    customerCompanyId:
-                                        e.target.value
-                                })
-                            }
-                        >
+                        <div className="company-select-row">
 
-                            <option value="">
-                                בחר חברת לקוח
-                            </option>
+                            <select
+                                value={
+                                    user.customerCompanyId
+                                }
+                                onChange={(e) =>
+                                    setUser({
+                                        ...user,
+                                        customerCompanyId:
+                                            e.target.value
+                                    })
+                                }
+                            >
 
-                            {companies
-                                .filter(
-                                    company =>
-                                        company.name !== 'SYSTEM'
-                                )
-                                .map(company => (
+                                <option value="">
+                                    בחר חברת לקוח
+                                </option>
 
-                                    <option
-                                        key={company.id}
-                                        value={company.id}
-                                    >
-                                        {company.name}
-                                    </option>
+                                {companies
+                                    .filter(
+                                        company =>
+                                            company.name !== 'SYSTEM'
+                                    )
+                                    .map(company => (
 
-                                ))}
+                                        <option
+                                            key={company.id}
+                                            value={company.id}
+                                        >
+                                            {company.name}
+                                        </option>
 
-                        </select>
+                                    ))}
+
+                            </select>
+
+
+                            <button
+                                type="button"
+                                className="add-company-button"
+                                onClick={() => {
+
+                                    setShowNewCompanyFor(
+                                        'customerCompany'
+                                    );
+
+                                    setNewCompanyName('');
+
+                                }}
+                            >
+                                +
+                            </button>
+
+                        </div>
+
+
+                        {showNewCompanyFor ===
+                            'customerCompany' && (
+
+                            <div className="new-company-box">
+
+                                <input
+                                    type="text"
+                                    placeholder="שם החברה החדשה"
+                                    value={newCompanyName}
+                                    onChange={(e) =>
+                                        setNewCompanyName(
+                                            e.target.value
+                                        )
+                                    }
+                                />
+
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        handleAddCompany(
+                                            'customerCompany'
+                                        )
+                                    }
+                                >
+                                    הוסף חברה
+                                </button>
+
+                            </div>
+
+                        )}
 
                     </div>
 
@@ -384,6 +564,7 @@ function AddUserPage() {
                 <button type="submit">
                     הוסף משתמש
                 </button>
+
 
             </form>
 
