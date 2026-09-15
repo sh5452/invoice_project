@@ -17,7 +17,7 @@ const {
 router.post(
     '/',
     authenticateToken,
-    authorizeRoles('company_admin'),
+    authorizeRoles('super_admin', 'company_admin'),
     async (req, res) => {
 
         console.log("CREATE USER BODY:", req.body);
@@ -38,20 +38,34 @@ router.post(
                 return res.status(400).send('כל השדות הם חובה');
             }
 
-            if (role === 'company_admin') {
+            // מנהל חברה לא יכול ליצור מנהל חברה נוסף.
+            // רק super_admin יכול ליצור company_admin.
+            if (
+                role === 'company_admin' &&
+                req.user.role !== 'super_admin'
+            ) {
                 return res
                     .status(403)
-                    .send('מנהל חברה לא יכול ליצור מנהל נוסף');
+                    .send('מנהל חברה לא יכול ליצור מנהל חברה נוסף');
             }
 
-            // לקוח מקבל את החברה שהוזנה בטופס.
-            // עובד או נהג מקבלים את החברה של המנהל שיצר אותם.
+            // =========================
+            // קביעת החברה
+            // =========================
+
             let userCompany;
 
-            if (role === 'customer') {
+            if (req.user.role === 'super_admin') {
+
+                // super_admin יכול ליצור משתמש עבור כל חברה
                 userCompany = company;
+
             } else {
+
+                // company_admin יכול ליצור משתמשים
+                // רק עבור החברה שלו
                 userCompany = req.user.company;
+
             }
 
             const passwordHash = await bcrypt.hash(password, 10);
@@ -89,17 +103,12 @@ router.post(
             );
 
             console.log("USER CREATED:", result.rows[0]);
-            console.log("BEFORE RESPONSE - HEADERS SENT:", res.headersSent);
 
             return res.status(201).json(result.rows[0]);
 
         } catch (err) {
 
             console.error("ADD USER ERROR:", err);
-
-            if (res.headersSent) {
-                return;
-            }
 
             if (err.code === '23505') {
                 return res
@@ -120,18 +129,54 @@ router.post(
 router.get(
     '/',
     authenticateToken,
-    authorizeRoles('company_admin'),
+    authorizeRoles('super_admin', 'company_admin'),
     async (req, res) => {
 
         try {
 
-            const result = await pool.query(
-                `
-                SELECT *
-                FROM users
-                ORDER BY created_at DESC
-                `
-            );
+            let result;
+
+            // super_admin רואה את כל המשתמשים
+            if (req.user.role === 'super_admin') {
+
+                result = await pool.query(
+                    `
+                    SELECT
+                        id,
+                        username,
+                        full_name,
+                        email,
+                        company,
+                        role,
+                        created_at,
+                        is_active
+                    FROM users
+                    ORDER BY created_at DESC
+                    `
+                );
+
+            } else {
+
+                // company_admin רואה רק משתמשים מהחברה שלו
+                result = await pool.query(
+                    `
+                    SELECT
+                        id,
+                        username,
+                        full_name,
+                        email,
+                        company,
+                        role,
+                        created_at,
+                        is_active
+                    FROM users
+                    WHERE company = $1
+                    ORDER BY created_at DESC
+                    `,
+                    [req.user.company]
+                );
+
+            }
 
             res.json(result.rows);
 
@@ -139,6 +184,7 @@ router.get(
 
             console.error(err);
             res.status(500).send('Error fetching users');
+
         }
     }
 );
@@ -151,7 +197,7 @@ router.get(
 router.put(
     '/:id',
     authenticateToken,
-    authorizeRoles('company_admin'),
+    authorizeRoles('super_admin', 'company_admin'),
     async (req, res) => {
 
         try {
@@ -166,29 +212,103 @@ router.put(
                 role
             } = req.body;
 
+
+            // =========================
+            // super_admin
+            // =========================
+
+            if (req.user.role === 'super_admin') {
+
+                const result = await pool.query(
+                    `
+                    UPDATE users
+                    SET
+                        username = $1,
+                        full_name = $2,
+                        email = $3,
+                        company = $4,
+                        role = $5
+                    WHERE id = $6
+                    RETURNING
+                        id,
+                        username,
+                        full_name,
+                        email,
+                        company,
+                        role,
+                        created_at,
+                        is_active
+                    `,
+                    [
+                        username,
+                        fullName,
+                        email,
+                        company,
+                        role,
+                        id
+                    ]
+                );
+
+                if (result.rows.length === 0) {
+                    return res.status(404).send('User not found');
+                }
+
+                return res.json(result.rows[0]);
+
+            }
+
+
+            // =========================
+            // company_admin
+            // =========================
+
+            // מנהל חברה יכול לערוך רק משתמש מהחברה שלו.
+            // הוא גם לא יכול להפוך משתמש ל-company_admin.
+
+            if (role === 'company_admin') {
+
+                return res
+                    .status(403)
+                    .send('מנהל חברה לא יכול להגדיר מנהל חברה נוסף');
+
+            }
+
             const result = await pool.query(
                 `
                 UPDATE users
-                SET username = $1,
+                SET
+                    username = $1,
                     full_name = $2,
                     email = $3,
                     company = $4,
                     role = $5
                 WHERE id = $6
-                RETURNING *
+                AND company = $7
+                RETURNING
+                    id,
+                    username,
+                    full_name,
+                    email,
+                    company,
+                    role,
+                    created_at,
+                    is_active
                 `,
                 [
                     username,
                     fullName,
                     email,
-                    company,
+                    req.user.company,
                     role,
-                    id
+                    id,
+                    req.user.company
                 ]
             );
 
             if (result.rows.length === 0) {
-                return res.status(404).send('User not found');
+                return res
+                    .status(404)
+                    .send('המשתמש לא נמצא בחברה שלך');
             }
 
             res.json(result.rows[0]);
@@ -196,7 +316,15 @@ router.put(
         } catch (err) {
 
             console.error(err);
+
+            if (err.code === '23505') {
+                return res
+                    .status(400)
+                    .send('שם המשתמש או האימייל כבר קיימים');
+            }
+
             res.status(500).send('Error updating user');
+
         }
     }
 );
@@ -209,25 +337,77 @@ router.put(
 router.patch(
     '/:id/deactivate',
     authenticateToken,
-    authorizeRoles('company_admin'),
+    authorizeRoles('super_admin', 'company_admin'),
     async (req, res) => {
 
         try {
 
             const { id } = req.params;
 
-            const result = await pool.query(
-                `
-                UPDATE users
-                SET is_active = FALSE
-                WHERE id = $1
-                RETURNING *
-                `,
-                [id]
-            );
+            let result;
+
+
+            // =========================
+            // super_admin
+            // =========================
+
+            if (req.user.role === 'super_admin') {
+
+                result = await pool.query(
+                    `
+                    UPDATE users
+                    SET is_active = FALSE
+                    WHERE id = $1
+                    RETURNING
+                        id,
+                        username,
+                        full_name,
+                        email,
+                        company,
+                        role,
+                        created_at,
+                        is_active
+                    `,
+                    [id]
+                );
+
+            } else {
+
+                // =========================
+                // company_admin
+                // =========================
+
+                result = await pool.query(
+                    `
+                    UPDATE users
+                    SET is_active = FALSE
+                    WHERE id = $1
+                    AND company = $2
+                    RETURNING
+                        id,
+                        username,
+                        full_name,
+                        email,
+                        company,
+                        role,
+                        created_at,
+                        is_active
+                    `,
+                    [
+                        id,
+                        req.user.company
+                    ]
+                );
+
+            }
+
 
             if (result.rows.length === 0) {
-                return res.status(404).send('User not found');
+
+                return res
+                    .status(404)
+                    .send('המשתמש לא נמצא או שאין לך הרשאה להשבית אותו');
+
             }
 
             res.json(result.rows[0]);
@@ -236,6 +416,7 @@ router.patch(
 
             console.error(err);
             res.status(500).send('Error deactivating user');
+
         }
     }
 );
