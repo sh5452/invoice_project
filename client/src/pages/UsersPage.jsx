@@ -1,16 +1,40 @@
+
 import { useEffect, useState } from 'react';
-import api from '../services/api'
+import api from '../services/api';
+
 
 function UsersPage() {
 
     const [users, setUsers] = useState([]);
     const [editingUser, setEditingUser] = useState(null);
+    const [openCompanies, setOpenCompanies] = useState({});
+
+    const currentUser = JSON.parse(
+        localStorage.getItem('user') || 'null'
+    );
+
+    const isSuperAdmin = currentUser?.role === 'super_admin';
+
+
+    // =========================
+    // התחלת עריכה
+    // =========================
 
     const startEdit = (user) => {
-        setEditingUser({ ...user });
+
+        setEditingUser({
+            ...user
+        });
+
     };
 
+
+    // =========================
+    // שמירת משתמש
+    // =========================
+
     const saveUser = async () => {
+
         try {
 
             const response = await api.put(
@@ -37,120 +61,233 @@ function UsersPage() {
         } catch (err) {
 
             console.error(err);
-            alert("שגיאה בעדכון המשתמש");
+
+            alert(
+                err.response?.data ||
+                "שגיאה בעדכון המשתמש"
+            );
 
         }
     };
 
+
+    // =========================
+    // ביטול עריכה
+    // =========================
+
     const cancelEdit = () => {
+
         setEditingUser(null);
+
     };
+
+
+    // =========================
+    // השבתת משתמש
+    // =========================
 
     const deactivateUser = async (id) => {
 
-    const confirmDeactivate = window.confirm(
-        "האם את בטוחה שברצונך להשבית את המשתמש?"
-    );
-
-    if (!confirmDeactivate) {
-        return;
-    }
-
-    try {
-
-        const response = await api.patch(
-            `users/${id}/deactivate`
+        const confirmDeactivate = window.confirm(
+            "האם את בטוחה שברצונך להשבית את המשתמש?"
         );
 
-        setUsers(
-            users.map(user =>
-                user.id === id
-                    ? response.data
-                    : user
-            )
-        );
+        if (!confirmDeactivate) {
+            return;
+        }
 
-    } catch (err) {
+        try {
 
-        console.error(err);
-        alert("שגיאה בהשבתת המשתמש");
+            const response = await api.patch(
+                `/users/${id}/deactivate`
+            );
 
-    }
-};
+            setUsers(
+                users.map(user =>
+                    user.id === id
+                        ? response.data
+                        : user
+                )
+            );
+
+        } catch (err) {
+
+            console.error(err);
+
+            alert(
+                err.response?.data ||
+                "שגיאה בהשבתת המשתמש"
+            );
+
+        }
+    };
+
+
+    // =========================
+    // פתיחה / סגירה של חברה
+    // =========================
+
+    const toggleCompany = (company) => {
+
+        setOpenCompanies(prev => ({
+            ...prev,
+            [company]: !prev[company]
+        }));
+
+    };
+
+
+    // =========================
+    // טעינת משתמשים
+    // =========================
+
     useEffect(() => {
 
         const fetchUsers = async () => {
+
             try {
 
-                const response = await api.get(
-                    '/users'
-                );
+                const response = await api.get('/users');
 
                 setUsers(response.data);
 
             } catch (err) {
 
                 console.error(err);
+
             }
+
         };
 
         fetchUsers();
 
     }, []);
 
-    return (
-        <div>
 
-            <h1>רשימת משתמשים</h1>
+    // =========================
+    // יצירת רשימת חברות
+    // =========================
 
-            {users.map((user) => (
+    const companies = [
+        ...new Set(
+            users
+                .map(user => user.company)
+                .filter(Boolean)
+        )
+    ];
 
-                <div key={user.id}>
 
-                    {editingUser?.id === user.id ? (
+    // =========================
+    // משתמשים לפי חברה
+    // =========================
 
-                        <>
-                            <p>
-                                שם משתמש:
-                                <input
-                                    value={editingUser.username}
-                                    onChange={(e) =>
-                                        setEditingUser({
-                                            ...editingUser,
-                                            username: e.target.value
-                                        })
-                                    }
-                                />
-                            </p>
+    const getCompanyUsers = (company) => {
 
-                            <p>
-                                שם מלא:
-                                <input
-                                    value={editingUser.full_name}
-                                    onChange={(e) =>
-                                        setEditingUser({
-                                            ...editingUser,
-                                            full_name: e.target.value
-                                        })
-                                    }
-                                />
-                            </p>
+        return users.filter(
+            user => user.company === company
+        );
 
-                            <p>
-                                מייל:
-                                <input
-                                    value={editingUser.email}
-                                    onChange={(e) =>
-                                        setEditingUser({
-                                            ...editingUser,
-                                            email: e.target.value
-                                        })
-                                    }
-                                />
-                            </p>
+    };
+
+
+    // =========================
+    // תרגום תפקיד
+    // =========================
+
+    const getRoleName = (role) => {
+
+        switch (role) {
+
+            case 'super_admin':
+                return 'מנהל מערכת';
+
+            case 'company_admin':
+                return 'מנהל חברה';
+
+            case 'employee':
+                return 'עובד חברה';
+
+            case 'driver':
+                return 'נהג';
+
+            case 'customer':
+                return 'לקוח';
+
+            default:
+                return role;
+
+        }
+
+    };
+
+
+    // =========================
+    // הצגת משתמש
+    // =========================
+
+    const renderUser = (user) => {
+
+        return (
+
+            <div key={user.id}>
+
+                {editingUser?.id === user.id ? (
+
+                    <>
+
+                        <p>
+                            שם משתמש:
+
+                            <input
+                                value={editingUser.username}
+                                onChange={(e) =>
+                                    setEditingUser({
+                                        ...editingUser,
+                                        username: e.target.value
+                                    })
+                                }
+                            />
+
+                        </p>
+
+
+                        <p>
+                            שם מלא:
+
+                            <input
+                                value={editingUser.full_name}
+                                onChange={(e) =>
+                                    setEditingUser({
+                                        ...editingUser,
+                                        full_name: e.target.value
+                                    })
+                                }
+                            />
+
+                        </p>
+
+
+                        <p>
+                            מייל:
+
+                            <input
+                                value={editingUser.email}
+                                onChange={(e) =>
+                                    setEditingUser({
+                                        ...editingUser,
+                                        email: e.target.value
+                                    })
+                                }
+                            />
+
+                        </p>
+
+
+                        {isSuperAdmin ? (
 
                             <p>
                                 חברה:
+
                                 <input
                                     value={editingUser.company}
                                     onChange={(e) =>
@@ -160,83 +297,222 @@ function UsersPage() {
                                         })
                                     }
                                 />
+
                             </p>
+
+                        ) : (
 
                             <p>
-                                תפקיד:
-
-                                <select
-                                    value={editingUser.role}
-                                    onChange={(e) =>
-                                        setEditingUser({
-                                            ...editingUser,
-                                            role: e.target.value
-                                        })
-                                    }
-                                >
-                                    <option value="company_admin">
-                                        מנהל לקוח
-                                    </option>
-
-                                    <option value="employee">
-                                        עובד חברה
-                                    </option>
-
-                                    <option value="driver">
-                                        נהג
-                                    </option>
-
-                                    <option value="customer">
-                                        לקוח
-                                    </option>
-
-                                </select>
-
+                                חברה: {editingUser.company}
                             </p>
 
-                            <button onClick={saveUser}>
-                                שמור
-                            </button>
+                        )}
 
-                            <button onClick={cancelEdit}>
-                                ביטול
-                            </button>
-                        </>
+
+                        <p>
+
+                            תפקיד:
+
+                            <select
+                                value={editingUser.role}
+                                onChange={(e) =>
+                                    setEditingUser({
+                                        ...editingUser,
+                                        role: e.target.value
+                                    })
+                                }
+                            >
+
+                                {isSuperAdmin && (
+
+                                    <option value="company_admin">
+                                        מנהל חברה
+                                    </option>
+
+                                )}
+
+                                <option value="employee">
+                                    עובד חברה
+                                </option>
+
+                                <option value="driver">
+                                    נהג
+                                </option>
+
+                                <option value="customer">
+                                    לקוח
+                                </option>
+
+                            </select>
+
+                        </p>
+
+
+                        <button onClick={saveUser}>
+                            שמור
+                        </button>
+
+
+                        <button onClick={cancelEdit}>
+                            ביטול
+                        </button>
+
+                    </>
+
+                ) : (
+
+                    <>
+
+                        <p>
+                            שם משתמש: {user.username}
+                        </p>
+
+                        <p>
+                            שם מלא: {user.full_name}
+                        </p>
+
+                        <p>
+                            מייל: {user.email}
+                        </p>
+
+                        <p>
+                            תפקיד: {getRoleName(user.role)}
+                        </p>
+
+                        <button
+                            onClick={() => startEdit(user)}
+                        >
+                            עריכה
+                        </button>
+
+
+                        <button
+                            onClick={() =>
+                                deactivateUser(user.id)
+                            }
+                        >
+                            השבתה
+                        </button>
+
+
+                        <p>
+                            סטטוס:
+                            {' '}
+                            {user.is_active
+                                ? "פעיל"
+                                : "מושבת"
+                            }
+                        </p>
+
+                    </>
+
+                )}
+
+                <hr />
+
+            </div>
+
+        );
+
+    };
+
+
+    return (
+
+        <div>
+
+            <h1>ניהול משתמשים</h1>
+
+
+            {isSuperAdmin ? (
+
+                // =========================
+                // SUPER ADMIN
+                // =========================
+
+                <div>
+
+                    {companies.length === 0 ? (
+
+                        <p>
+                            עדיין לא נוספו חברות.
+                        </p>
 
                     ) : (
 
-                        <>
-                            <p>שם משתמש: {user.username}</p>
+                        companies.map(company => {
 
-                            <p>שם מלא: {user.full_name}</p>
+                            const companyUsers =
+                                getCompanyUsers(company);
 
-                            <p>מייל: {user.email}</p>
+                            const isOpen =
+                                openCompanies[company];
 
-                            <p>חברה: {user.company}</p>
+                            return (
 
-                            <p>תפקיד: {user.role}</p>
+                                <div key={company}>
 
-                            <button onClick={() => startEdit(user)}>
-                                עריכה
-                            </button>
+                                    <button
+                                        onClick={() =>
+                                            toggleCompany(company)
+                                        }
+                                    >
 
-                            <button  onClick={() => deactivateUser(user.id)}>
-                               השבתה
-                            </button>
-                            <p>
-    סטטוס: {user.is_active ? "פעיל" : "מושבת"}
-</p>
+                                        {isOpen ? '▼' : '▶'}
 
-                        </>
+                                        {' '}
+
+                                        {company}
+
+                                        {' '}
+
+                                        ({companyUsers.length})
+
+                                    </button>
+
+
+                                    {isOpen && (
+
+                                        <div>
+
+                                            {companyUsers.map(
+                                                renderUser
+                                            )}
+
+                                        </div>
+
+                                    )}
+
+                                </div>
+
+                            );
+
+                        })
+
                     )}
 
-                    <hr />
+                </div>
+
+            ) : (
+
+                // =========================
+                // COMPANY ADMIN
+                // =========================
+
+                <div>
+
+                    {users.map(renderUser)}
 
                 </div>
-            ))}
+
+            )}
 
         </div>
+
     );
+
 }
 
+
 export default UsersPage;
+
