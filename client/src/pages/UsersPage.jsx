@@ -1,7 +1,5 @@
-
 import { useEffect, useState } from 'react';
 import api from '../services/api';
-import './UserPage.css'
 
 function UsersPage() {
 
@@ -15,23 +13,11 @@ function UsersPage() {
 
     const isSuperAdmin = currentUser?.role === 'super_admin';
 
-
-    // =========================
-    // התחלת עריכה
-    // =========================
-
     const startEdit = (user) => {
-
         setEditingUser({
             ...user
         });
-
     };
-
-
-    // =========================
-    // שמירת משתמש
-    // =========================
 
     const saveUser = async () => {
 
@@ -44,6 +30,7 @@ function UsersPage() {
                     fullName: editingUser.full_name,
                     email: editingUser.email,
                     company: editingUser.company,
+                    customerCompany: editingUser.customer_company,
                     role: editingUser.role
                 }
             );
@@ -70,21 +57,9 @@ function UsersPage() {
         }
     };
 
-
-    // =========================
-    // ביטול עריכה
-    // =========================
-
     const cancelEdit = () => {
-
         setEditingUser(null);
-
     };
-
-
-    // =========================
-    // השבתת משתמש
-    // =========================
 
     const deactivateUser = async (id) => {
 
@@ -122,11 +97,6 @@ function UsersPage() {
         }
     };
 
-
-    // =========================
-    // פתיחה / סגירה של חברה
-    // =========================
-
     const toggleCompany = (company) => {
 
         setOpenCompanies(prev => ({
@@ -135,11 +105,6 @@ function UsersPage() {
         }));
 
     };
-
-
-    // =========================
-    // טעינת משתמשים
-    // =========================
 
     useEffect(() => {
 
@@ -163,36 +128,24 @@ function UsersPage() {
 
     }, []);
 
-
-    // =========================
-    // יצירת רשימת חברות
-    // =========================
-
     const companies = [
         ...new Set(
             users
+                .filter(user => user.role !== 'super_admin')
                 .map(user => user.company)
                 .filter(Boolean)
         )
     ];
 
-
-    // =========================
-    // משתמשים לפי חברה
-    // =========================
-
     const getCompanyUsers = (company) => {
 
         return users.filter(
-            user => user.company === company
+            user =>
+                user.company === company &&
+                user.role !== 'super_admin'
         );
 
     };
-
-
-    // =========================
-    // תרגום תפקיד
-    // =========================
 
     const getRoleName = (role) => {
 
@@ -220,11 +173,6 @@ function UsersPage() {
 
     };
 
-
-    // =========================
-    // הצגת משתמש
-    // =========================
-
     const renderUser = (user) => {
 
         return (
@@ -250,7 +198,6 @@ function UsersPage() {
 
                         </p>
 
-
                         <p>
                             שם מלא:
 
@@ -266,7 +213,6 @@ function UsersPage() {
 
                         </p>
 
-
                         <p>
                             מייל:
 
@@ -281,7 +227,6 @@ function UsersPage() {
                             />
 
                         </p>
-
 
                         {isSuperAdmin ? (
 
@@ -308,6 +253,26 @@ function UsersPage() {
 
                         )}
 
+                        {editingUser.role === 'customer' && (
+
+                            <p>
+                                חברת הלקוח:
+
+                                <input
+                                    value={
+                                        editingUser.customer_company || ''
+                                    }
+                                    onChange={(e) =>
+                                        setEditingUser({
+                                            ...editingUser,
+                                            customer_company: e.target.value
+                                        })
+                                    }
+                                />
+
+                            </p>
+
+                        )}
 
                         <p>
 
@@ -324,11 +289,9 @@ function UsersPage() {
                             >
 
                                 {isSuperAdmin && (
-
                                     <option value="company_admin">
                                         מנהל חברה
                                     </option>
-
                                 )}
 
                                 <option value="employee">
@@ -347,11 +310,9 @@ function UsersPage() {
 
                         </p>
 
-
                         <button onClick={saveUser}>
                             שמור
                         </button>
-
 
                         <button onClick={cancelEdit}>
                             ביטול
@@ -379,12 +340,18 @@ function UsersPage() {
                             תפקיד: {getRoleName(user.role)}
                         </p>
 
+                        {user.role === 'customer' && (
+                            <p>
+                                חברת הלקוח:{' '}
+                                {user.customer_company || 'לא הוגדרה'}
+                            </p>
+                        )}
+
                         <button
                             onClick={() => startEdit(user)}
                         >
                             עריכה
                         </button>
-
 
                         <button
                             onClick={() =>
@@ -393,7 +360,6 @@ function UsersPage() {
                         >
                             השבתה
                         </button>
-
 
                         <p>
                             סטטוס:
@@ -416,19 +382,13 @@ function UsersPage() {
 
     };
 
-
     return (
 
         <div>
 
             <h1>ניהול משתמשים</h1>
 
-
             {isSuperAdmin ? (
-
-                // =========================
-                // SUPER ADMIN
-                // =========================
 
                 <div>
 
@@ -452,12 +412,12 @@ function UsersPage() {
 
                                 <div key={company}>
 
-                                  <button
-    className="company-button"
-    onClick={() =>
-        toggleCompany(company)
-    }
->
+                                    <button
+                                        className="company-button"
+                                        onClick={() =>
+                                            toggleCompany(company)
+                                        }
+                                    >
 
                                         {isOpen ? '▼' : '▶'}
 
@@ -470,7 +430,6 @@ function UsersPage() {
                                         ({companyUsers.length})
 
                                     </button>
-
 
                                     {isOpen && (
 
@@ -496,10 +455,6 @@ function UsersPage() {
 
             ) : (
 
-                // =========================
-                // COMPANY ADMIN
-                // =========================
-
                 <div>
 
                     {users.map(renderUser)}
@@ -514,6 +469,4 @@ function UsersPage() {
 
 }
 
-
 export default UsersPage;
-

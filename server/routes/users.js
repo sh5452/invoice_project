@@ -29,11 +29,12 @@ router.post(
                 username,
                 fullName,
                 email,
-                company,
-                customerCompany,
+                companyId,
+                customerCompanyId,
                 role,
                 password
             } = req.body;
+
 
             if (
                 !username ||
@@ -41,11 +42,13 @@ router.post(
                 !email ||
                 !role ||
                 !password ||
-                !company
+                !companyId
             ) {
                 return res.status(400).send('כל השדות הם חובה');
             }
 
+
+            // מנהל חברה לא יכול ליצור מנהל חברה נוסף
             if (
                 role === 'company_admin' &&
                 req.user.role !== 'super_admin'
@@ -55,15 +58,36 @@ router.post(
                     .send('מנהל חברה לא יכול ליצור מנהל חברה נוסף');
             }
 
-            let userCompany;
 
+            let userCompanyId;
+
+
+            // Super Admin יכול לבחור חברה
             if (req.user.role === 'super_admin') {
-                userCompany = company;
+
+                userCompanyId = companyId;
+
             } else {
-                userCompany = req.user.company;
+
+                // Company Admin מקבל אוטומטית את החברה שלו
+                userCompanyId = req.user.company_id;
+
             }
 
-            const passwordHash = await bcrypt.hash(password, 10);
+
+            // אם המשתמש אינו לקוח,
+            // אין צורך בחברת לקוח
+            const finalCustomerCompanyId =
+                role === 'customer'
+                    ? customerCompanyId || null
+                    : null;
+
+
+            const passwordHash = await bcrypt.hash(
+                password,
+                10
+            );
+
 
             const result = await pool.query(
                 `
@@ -75,9 +99,30 @@ router.post(
                     company,
                     customer_company,
                     role,
-                    password_hash
+                    password_hash,
+                    company_id,
+                    customer_company_id
                 )
-                VALUES ($1, $2, $3, $4, $5, $6, $7)
+                VALUES
+                (
+                    $1,
+                    $2,
+                    $3,
+                    (SELECT name FROM companies WHERE id = $4),
+                    CASE
+                        WHEN $5 IS NOT NULL
+                        THEN (
+                            SELECT name
+                            FROM companies
+                            WHERE id = $5
+                        )
+                        ELSE NULL
+                    END,
+                    $6,
+                    $7,
+                    $4,
+                    $5
+                )
                 RETURNING
                     id,
                     username,
@@ -85,6 +130,8 @@ router.post(
                     email,
                     company,
                     customer_company,
+                    company_id,
+                    customer_company_id,
                     role,
                     created_at,
                     is_active
@@ -93,30 +140,55 @@ router.post(
                     username,
                     fullName,
                     email,
-                    userCompany,
-                    role === 'customer'
-                        ? customerCompany
-                        : null,
+                    userCompanyId,
+                    finalCustomerCompanyId,
                     role,
                     passwordHash
                 ]
             );
 
-            console.log("USER CREATED:", result.rows[0]);
 
-            return res.status(201).json(result.rows[0]);
+            console.log(
+                "USER CREATED:",
+                result.rows[0]
+            );
+
+
+            return res
+                .status(201)
+                .json(result.rows[0]);
+
 
         } catch (err) {
 
-            console.error("ADD USER ERROR:", err);
+            console.error(
+                "ADD USER ERROR:",
+                err
+            );
+
 
             if (err.code === '23505') {
+
                 return res
                     .status(400)
                     .send('שם המשתמש או האימייל כבר קיימים');
+
             }
 
-            return res.status(500).send('Error creating user');
+
+            if (err.code === '23503') {
+
+                return res
+                    .status(400)
+                    .send('החברה שנבחרה אינה קיימת');
+
+            }
+
+
+            return res
+                .status(500)
+                .send('Error creating user');
+
         }
     }
 );
@@ -136,22 +208,40 @@ router.get(
 
             let result;
 
+
+            const baseQuery = `
+                SELECT
+                    u.id,
+                    u.username,
+                    u.full_name,
+                    u.email,
+
+                    u.company_id,
+                    c.name AS company,
+
+                    u.customer_company_id,
+                    cc.name AS customer_company,
+
+                    u.role,
+                    u.created_at,
+                    u.is_active
+
+                FROM users u
+
+                LEFT JOIN companies c
+                    ON u.company_id = c.id
+
+                LEFT JOIN companies cc
+                    ON u.customer_company_id = cc.id
+            `;
+
+
             if (req.user.role === 'super_admin') {
 
                 result = await pool.query(
                     `
-                    SELECT
-                        id,
-                        username,
-                        full_name,
-                        email,
-                        company,
-                        customer_company,
-                        role,
-                        created_at,
-                        is_active
-                    FROM users
-                    ORDER BY created_at DESC
+                    ${baseQuery}
+                    ORDER BY u.created_at DESC
                     `
                 );
 
@@ -159,31 +249,26 @@ router.get(
 
                 result = await pool.query(
                     `
-                    SELECT
-                        id,
-                        username,
-                        full_name,
-                        email,
-                        company,
-                        customer_company,
-                        role,
-                        created_at,
-                        is_active
-                    FROM users
-                    WHERE company = $1
-                    ORDER BY created_at DESC
+                    ${baseQuery}
+                    WHERE u.company_id = $1
+                    ORDER BY u.created_at DESC
                     `,
-                    [req.user.company]
+                    [req.user.company_id]
                 );
 
             }
 
+
             res.json(result.rows);
+
 
         } catch (err) {
 
             console.error(err);
-            res.status(500).send('Error fetching users');
+
+            res
+                .status(500)
+                .send('Error fetching users');
 
         }
     }
@@ -208,8 +293,8 @@ router.put(
                 username,
                 fullName,
                 email,
-                company,
-                customerCompany,
+                companyId,
+                customerCompanyId,
                 role
             } = req.body;
 
@@ -220,17 +305,41 @@ router.put(
 
             if (req.user.role === 'super_admin') {
 
+                const finalCustomerCompanyId =
+                    role === 'customer'
+                        ? customerCompanyId || null
+                        : null;
+
+
                 const result = await pool.query(
                     `
                     UPDATE users
+
                     SET
                         username = $1,
                         full_name = $2,
                         email = $3,
-                        company = $4,
-                        customer_company = $5,
+
+                        company_id = $4,
+
+                        company = (
+                            SELECT name
+                            FROM companies
+                            WHERE id = $4
+                        ),
+
+                        customer_company_id = $5,
+
+                        customer_company = (
+                            SELECT name
+                            FROM companies
+                            WHERE id = $5
+                        ),
+
                         role = $6
+
                     WHERE id = $7
+
                     RETURNING
                         id,
                         username,
@@ -238,6 +347,8 @@ router.put(
                         email,
                         company,
                         customer_company,
+                        company_id,
+                        customer_company_id,
                         role,
                         created_at,
                         is_active
@@ -246,20 +357,26 @@ router.put(
                         username,
                         fullName,
                         email,
-                        company,
-                        role === 'customer'
-                            ? customerCompany
-                            : null,
+                        companyId,
+                        finalCustomerCompanyId,
                         role,
                         id
                     ]
                 );
 
+
                 if (result.rows.length === 0) {
-                    return res.status(404).send('User not found');
+
+                    return res
+                        .status(404)
+                        .send('User not found');
+
                 }
 
-                return res.json(result.rows[0]);
+
+                return res.json(
+                    result.rows[0]
+                );
 
             }
 
@@ -272,22 +389,41 @@ router.put(
 
                 return res
                     .status(403)
-                    .send('מנהל חברה לא יכול להגדיר מנהל חברה נוסף');
+                    .send(
+                        'מנהל חברה לא יכול להגדיר מנהל חברה נוסף'
+                    );
 
             }
+
+
+            const finalCustomerCompanyId =
+                role === 'customer'
+                    ? customerCompanyId || null
+                    : null;
+
 
             const result = await pool.query(
                 `
                 UPDATE users
+
                 SET
                     username = $1,
                     full_name = $2,
                     email = $3,
-                    company = $4,
-                    customer_company = $5,
-                    role = $6
-                WHERE id = $7
-                AND company = $8
+
+                    customer_company_id = $4,
+
+                    customer_company = (
+                        SELECT name
+                        FROM companies
+                        WHERE id = $4
+                    ),
+
+                    role = $5
+
+                WHERE id = $6
+                AND company_id = $7
+
                 RETURNING
                     id,
                     username,
@@ -295,6 +431,8 @@ router.put(
                     email,
                     company,
                     customer_company,
+                    company_id,
+                    customer_company_id,
                     role,
                     created_at,
                     is_active
@@ -303,37 +441,58 @@ router.put(
                     username,
                     fullName,
                     email,
-                    req.user.company,
-                    role === 'customer'
-                        ? customerCompany
-                        : null,
+                    finalCustomerCompanyId,
                     role,
                     id,
-                    req.user.company
+                    req.user.company_id
                 ]
             );
+
 
             if (result.rows.length === 0) {
 
                 return res
                     .status(404)
-                    .send('המשתמש לא נמצא בחברה שלך');
+                    .send(
+                        'המשתמש לא נמצא בחברה שלך'
+                    );
 
             }
 
+
             res.json(result.rows[0]);
+
 
         } catch (err) {
 
             console.error(err);
 
+
             if (err.code === '23505') {
+
                 return res
                     .status(400)
-                    .send('שם המשתמש או האימייל כבר קיימים');
+                    .send(
+                        'שם המשתמש או האימייל כבר קיימים'
+                    );
+
             }
 
-            res.status(500).send('Error updating user');
+
+            if (err.code === '23503') {
+
+                return res
+                    .status(400)
+                    .send(
+                        'החברה שנבחרה אינה קיימת'
+                    );
+
+            }
+
+
+            res
+                .status(500)
+                .send('Error updating user');
 
         }
     }
@@ -356,13 +515,17 @@ router.patch(
 
             let result;
 
+
             if (req.user.role === 'super_admin') {
 
                 result = await pool.query(
                     `
                     UPDATE users
+
                     SET is_active = FALSE
+
                     WHERE id = $1
+
                     RETURNING
                         id,
                         username,
@@ -370,6 +533,8 @@ router.patch(
                         email,
                         company,
                         customer_company,
+                        company_id,
+                        customer_company_id,
                         role,
                         created_at,
                         is_active
@@ -382,9 +547,12 @@ router.patch(
                 result = await pool.query(
                     `
                     UPDATE users
+
                     SET is_active = FALSE
+
                     WHERE id = $1
-                    AND company = $2
+                    AND company_id = $2
+
                     RETURNING
                         id,
                         username,
@@ -392,13 +560,15 @@ router.patch(
                         email,
                         company,
                         customer_company,
+                        company_id,
+                        customer_company_id,
                         role,
                         created_at,
                         is_active
                     `,
                     [
                         id,
-                        req.user.company
+                        req.user.company_id
                     ]
                 );
 
@@ -409,16 +579,25 @@ router.patch(
 
                 return res
                     .status(404)
-                    .send('המשתמש לא נמצא או שאין לך הרשאה להשבית אותו');
+                    .send(
+                        'המשתמש לא נמצא או שאין לך הרשאה להשבית אותו'
+                    );
 
             }
 
+
             res.json(result.rows[0]);
+
 
         } catch (err) {
 
             console.error(err);
-            res.status(500).send('Error deactivating user');
+
+            res
+                .status(500)
+                .send(
+                    'Error deactivating user'
+                );
 
         }
     }
