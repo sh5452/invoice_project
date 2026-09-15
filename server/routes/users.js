@@ -117,14 +117,14 @@ if (
                     $3,
                     (SELECT name FROM companies WHERE id = $4),
                     CASE
-                        WHEN $5 IS NOT NULL
-                        THEN (
-                            SELECT name
-                            FROM companies
-                            WHERE id = $5
-                        )
-                        ELSE NULL
-                    END,
+    WHEN $5::INTEGER IS NOT NULL
+    THEN (
+        SELECT name
+        FROM companies
+        WHERE id = $5::INTEGER
+    )
+    ELSE NULL
+END,
                     $6,
                     $7,
                     $4,
