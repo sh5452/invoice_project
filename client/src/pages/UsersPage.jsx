@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from 'react';
 import api from '../services/api';
-
+import './UserPage.css'
 
 function UsersPage() {
 
@@ -452,11 +452,12 @@ function UsersPage() {
 
                                 <div key={company}>
 
-                                    <button
-                                        onClick={() =>
-                                            toggleCompany(company)
-                                        }
-                                    >
+                                  <button
+    className="company-button"
+    onClick={() =>
+        toggleCompany(company)
+    }
+>
 
                                         {isOpen ? '▼' : '▶'}
 
