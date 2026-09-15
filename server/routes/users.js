@@ -30,16 +30,22 @@ router.post(
                 fullName,
                 email,
                 company,
+                customerCompany,
                 role,
                 password
             } = req.body;
 
-            if (!username || !fullName || !email || !role || !password || !company) {
+            if (
+                !username ||
+                !fullName ||
+                !email ||
+                !role ||
+                !password ||
+                !company
+            ) {
                 return res.status(400).send('כל השדות הם חובה');
             }
 
-            // מנהל חברה לא יכול ליצור מנהל חברה נוסף.
-            // רק super_admin יכול ליצור company_admin.
             if (
                 role === 'company_admin' &&
                 req.user.role !== 'super_admin'
@@ -49,23 +55,12 @@ router.post(
                     .send('מנהל חברה לא יכול ליצור מנהל חברה נוסף');
             }
 
-            // =========================
-            // קביעת החברה
-            // =========================
-
             let userCompany;
 
             if (req.user.role === 'super_admin') {
-
-                // super_admin יכול ליצור משתמש עבור כל חברה
                 userCompany = company;
-
             } else {
-
-                // company_admin יכול ליצור משתמשים
-                // רק עבור החברה שלו
                 userCompany = req.user.company;
-
             }
 
             const passwordHash = await bcrypt.hash(password, 10);
@@ -78,16 +73,18 @@ router.post(
                     full_name,
                     email,
                     company,
+                    customer_company,
                     role,
                     password_hash
                 )
-                VALUES ($1, $2, $3, $4, $5, $6)
+                VALUES ($1, $2, $3, $4, $5, $6, $7)
                 RETURNING
                     id,
                     username,
                     full_name,
                     email,
                     company,
+                    customer_company,
                     role,
                     created_at,
                     is_active
@@ -97,6 +94,9 @@ router.post(
                     fullName,
                     email,
                     userCompany,
+                    role === 'customer'
+                        ? customerCompany
+                        : null,
                     role,
                     passwordHash
                 ]
@@ -136,7 +136,6 @@ router.get(
 
             let result;
 
-            // super_admin רואה את כל המשתמשים
             if (req.user.role === 'super_admin') {
 
                 result = await pool.query(
@@ -147,6 +146,7 @@ router.get(
                         full_name,
                         email,
                         company,
+                        customer_company,
                         role,
                         created_at,
                         is_active
@@ -157,7 +157,6 @@ router.get(
 
             } else {
 
-                // company_admin רואה רק משתמשים מהחברה שלו
                 result = await pool.query(
                     `
                     SELECT
@@ -166,6 +165,7 @@ router.get(
                         full_name,
                         email,
                         company,
+                        customer_company,
                         role,
                         created_at,
                         is_active
@@ -209,12 +209,13 @@ router.put(
                 fullName,
                 email,
                 company,
+                customerCompany,
                 role
             } = req.body;
 
 
             // =========================
-            // super_admin
+            // Super Admin
             // =========================
 
             if (req.user.role === 'super_admin') {
@@ -227,14 +228,16 @@ router.put(
                         full_name = $2,
                         email = $3,
                         company = $4,
-                        role = $5
-                    WHERE id = $6
+                        customer_company = $5,
+                        role = $6
+                    WHERE id = $7
                     RETURNING
                         id,
                         username,
                         full_name,
                         email,
                         company,
+                        customer_company,
                         role,
                         created_at,
                         is_active
@@ -244,6 +247,9 @@ router.put(
                         fullName,
                         email,
                         company,
+                        role === 'customer'
+                            ? customerCompany
+                            : null,
                         role,
                         id
                     ]
@@ -259,11 +265,8 @@ router.put(
 
 
             // =========================
-            // company_admin
+            // Company Admin
             // =========================
-
-            // מנהל חברה יכול לערוך רק משתמש מהחברה שלו.
-            // הוא גם לא יכול להפוך משתמש ל-company_admin.
 
             if (role === 'company_admin') {
 
@@ -281,15 +284,17 @@ router.put(
                     full_name = $2,
                     email = $3,
                     company = $4,
-                    role = $5
-                WHERE id = $6
-                AND company = $7
+                    customer_company = $5,
+                    role = $6
+                WHERE id = $7
+                AND company = $8
                 RETURNING
                     id,
                     username,
                     full_name,
                     email,
                     company,
+                    customer_company,
                     role,
                     created_at,
                     is_active
@@ -299,6 +304,9 @@ router.put(
                     fullName,
                     email,
                     req.user.company,
+                    role === 'customer'
+                        ? customerCompany
+                        : null,
                     role,
                     id,
                     req.user.company
@@ -306,9 +314,11 @@ router.put(
             );
 
             if (result.rows.length === 0) {
+
                 return res
                     .status(404)
                     .send('המשתמש לא נמצא בחברה שלך');
+
             }
 
             res.json(result.rows[0]);
@@ -346,11 +356,6 @@ router.patch(
 
             let result;
 
-
-            // =========================
-            // super_admin
-            // =========================
-
             if (req.user.role === 'super_admin') {
 
                 result = await pool.query(
@@ -364,6 +369,7 @@ router.patch(
                         full_name,
                         email,
                         company,
+                        customer_company,
                         role,
                         created_at,
                         is_active
@@ -372,10 +378,6 @@ router.patch(
                 );
 
             } else {
-
-                // =========================
-                // company_admin
-                // =========================
 
                 result = await pool.query(
                     `
@@ -389,6 +391,7 @@ router.patch(
                         full_name,
                         email,
                         company,
+                        customer_company,
                         role,
                         created_at,
                         is_active

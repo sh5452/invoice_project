@@ -8,4 +8,5 @@ CREATE TABLE users (
     created_at TIMESTAMP DEFAULT NOW(),
     is_active BOOLEAN DEFAULT TRUE,
     password_hash TEXT;
+    customer_company VARCHAR(150);
 );

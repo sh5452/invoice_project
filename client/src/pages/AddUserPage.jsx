@@ -22,7 +22,8 @@ function AddUserPage() {
         email: "",
         company: "",
         role: "",
-        password: ""
+        password: "",
+        customerCompany: ""
     });
 
 
@@ -151,6 +152,21 @@ function AddUserPage() {
                     />
 
                 </div>
+                {user.role === "customer" && (
+    <div className="form-group">
+        <label>חברת הלקוח</label>
+        <input
+            type="text"
+            value={user.customerCompany}
+            onChange={(e) =>
+                setUser({
+                    ...user,
+                    customerCompany: e.target.value
+                })
+            }
+        />
+    </div>
+)}
 
 
                 <div className="form-group">
