@@ -35,6 +35,7 @@ const deliveryNotesRouter = require('./routes/deliveryNote');
 const returnsRoutes = require('./routes/returns');
 const driversRouter = require('./routes/drivers');
 const companiesRoutes = require('./routes/companies');
+const productsRoutes = require('./routes/products');
 
 
 // =========================
@@ -312,6 +313,9 @@ app.use(
     '/companies',
     companiesRoutes
 );
+app.use(
+  '/products',
+   productsRoutes);
 // =========================
 // Server
 // =========================

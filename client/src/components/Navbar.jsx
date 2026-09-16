@@ -107,6 +107,11 @@ function Navbar() {
                     </>
 
                 )}
+                {canManageUsers && (
+    <Link to="/products">
+        ניהול מק"טים
+    </Link>
+)}
 
 
                 <Link to="/home">

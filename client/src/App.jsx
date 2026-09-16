@@ -16,7 +16,7 @@ import LoginPage from "./pages/loginPage";
 import UsersPage from "./pages/UsersPage";
 import DeliveryNotePage from "./pages/DeliveryNotePage";
 import ReturnOrder from "./pages/ReturnOrder";
-
+import ProductsPage from './pages/ProductsPage';
 import "./App.css";
 
 
@@ -255,6 +255,10 @@ console.log("LOADING START");
                         path="/orders/:id/return"
                         element={<ReturnOrder />}
                     />
+                    <Route
+    path="/products"
+    element={<ProductsPage />}
+/>
 
                 </Routes>
 
