@@ -45,8 +45,8 @@ function ProductsPage() {
 
             try {
 
-                const response =
-                    await api.get('/companies');
+               const response =
+    await api.get('/companies?parent_only=true');
 
                 setCompanies(
                     response.data.filter(

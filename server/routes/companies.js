@@ -18,23 +18,37 @@ router.get(
     authenticateToken,
     authorizeRoles('super_admin', 'company_admin'),
     async (req, res) => {
-
         try {
 
-            const result = await pool.query(
-                `
+            const { parent_only } = req.query;
+
+            let query = `
                 SELECT
                     id,
                     name,
                     created_at,
-                    is_active
-
+                    is_active,
+                    is_parent_company,
+                    parent_company_id
                 FROM companies
-
                 WHERE is_active = TRUE
+            `;
 
+            const params = [];
+
+            if (parent_only === 'true') {
+                query += `
+                    AND is_parent_company = TRUE
+                `;
+            }
+
+            query += `
                 ORDER BY name ASC
-                `
+            `;
+
+            const result = await pool.query(
+                query,
+                params
             );
 
             res.json(result.rows);
@@ -46,12 +60,10 @@ router.get(
                 err
             );
 
-            res
-                .status(500)
-                .send('Error fetching companies');
-
+            res.status(500).send(
+                'Error fetching companies'
+            );
         }
-
     }
 );
 // =========================
