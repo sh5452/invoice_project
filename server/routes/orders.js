@@ -18,8 +18,10 @@ router.post(
     authenticateToken,
     authorizeRoles('customer'),
     async (req, res) => {
-    console.log("CREATE ORDER ROUTE REACHED");
+
+        console.log("CREATE ORDER ROUTE REACHED");
         console.log("USER:", req.user);
+
         try {
 
             const {
@@ -31,28 +33,29 @@ router.post(
             } = req.body;
 
             const result = await pool.query(
-                ` INSERT INTO orders
-    (
-        order_number,
-        customer_name,
-        customer_phone,
-        customer_address,
-        status,
-        company,
-        customer_id
-    )
-    VALUES ($1, $2, $3, $4, $5, $6, $7)
-    RETURNING *
-    `,
-    [
-        order_number,
-        customer_name,
-        customer_phone,
-        customer_address,
-        status,
-        req.user.company,
-        req.user.id
-    ]
+                `
+                INSERT INTO orders
+                (
+                    order_number,
+                    customer_name,
+                    customer_phone,
+                    customer_address,
+                    status,
+                    company,
+                    customer_id
+                )
+                VALUES ($1, $2, $3, $4, $5, $6, $7)
+                RETURNING *
+                `,
+                [
+                    order_number,
+                    customer_name,
+                    customer_phone,
+                    customer_address,
+                    status,
+                    req.user.company,
+                    req.user.id
+                ]
             );
 
             res.json(result.rows[0]);
@@ -75,6 +78,7 @@ router.get(
     '/',
     authenticateToken,
     authorizeRoles(
+        'super_admin',
         'company_admin',
         'employee',
         'driver',
@@ -86,7 +90,33 @@ router.get(
 
             let result;
 
-            if (req.user.role === 'driver') {
+            // =========================
+            // סופר אדמין - כל ההזמנות
+            // =========================
+
+            if (req.user.role === 'super_admin') {
+
+                result = await pool.query(`
+                    SELECT
+                        orders.*,
+                        COALESCE(
+                            SUM(order_items.price * order_items.quantity),
+                            0
+                        ) AS total_price
+                    FROM orders
+                    LEFT JOIN order_items
+                        ON orders.id = order_items.order_id
+                    GROUP BY orders.id
+                    ORDER BY orders.id DESC
+                `);
+
+            }
+
+            // =========================
+            // נהג - רק הזמנות שלו
+            // =========================
+
+            else if (req.user.role === 'driver') {
 
                 result = await pool.query(`
                     SELECT
@@ -107,7 +137,13 @@ router.get(
                     req.user.id
                 ]);
 
-            } else {
+            }
+
+            // =========================
+            // שאר המשתמשים - לפי חברה
+            // =========================
+
+            else {
 
                 result = await pool.query(`
                     SELECT
@@ -139,6 +175,7 @@ router.get(
     }
 );
 
+
 // =========================
 // פרטי הזמנה
 // =========================
@@ -147,6 +184,7 @@ router.get(
     '/:id',
     authenticateToken,
     authorizeRoles(
+        'super_admin',
         'company_admin',
         'employee',
         'driver',
@@ -158,31 +196,68 @@ router.get(
 
             const { id } = req.params;
 
+            // =========================
+            // סופר אדמין - יכול לראות
+            // כל הזמנה
+            // =========================
 
-            // פרטי ההזמנה
+            let orderResult;
 
-           const orderResult = await pool.query(
-    `
-    SELECT
-        id,
-        order_number,
-        customer_name,
-        customer_phone,
-        customer_address,
-        status,
-        is_active,
-        company,
-        driver_id
-    FROM orders
-    WHERE id = $1
-    AND company = $2
-    AND (
-    $3 <> 'driver'
-    OR driver_id = $4
-)
-    `,
-    [id, req.user.company, req.user.role, req.user.id]
-);
+            if (req.user.role === 'super_admin') {
+
+                orderResult = await pool.query(
+                    `
+                    SELECT
+                        id,
+                        order_number,
+                        customer_name,
+                        customer_phone,
+                        customer_address,
+                        status,
+                        is_active,
+                        company,
+                        driver_id
+                    FROM orders
+                    WHERE id = $1
+                    `,
+                    [id]
+                );
+
+            } else {
+
+                // =========================
+                // שאר המשתמשים
+                // =========================
+
+                orderResult = await pool.query(
+                    `
+                    SELECT
+                        id,
+                        order_number,
+                        customer_name,
+                        customer_phone,
+                        customer_address,
+                        status,
+                        is_active,
+                        company,
+                        driver_id
+                    FROM orders
+                    WHERE id = $1
+                    AND company = $2
+                    AND (
+                        $3 <> 'driver'
+                        OR driver_id = $4
+                    )
+                    `,
+                    [
+                        id,
+                        req.user.company,
+                        req.user.role,
+                        req.user.id
+                    ]
+                );
+
+            }
 
             if (orderResult.rows.length === 0) {
                 return res.status(404).send('Order not found');
@@ -191,7 +266,9 @@ router.get(
             const order = orderResult.rows[0];
 
 
+            // =========================
             // פריטי ההזמנה
+            // =========================
 
             const itemsResult = await pool.query(
                 `
@@ -211,20 +288,22 @@ router.get(
             const items = itemsResult.rows;
 
 
+            // =========================
             // תעודות משלוח
+            // =========================
 
             const deliveryNotesResult = await pool.query(
                 `
                 SELECT
-    id,
-    delivery_note_number,
-    received_by,
-    delivery_at,
-    notes,
-    delivery_note_image
-FROM delivery_notes
-WHERE order_id = $1
-ORDER BY delivery_at
+                    id,
+                    delivery_note_number,
+                    received_by,
+                    delivery_at,
+                    notes,
+                    delivery_note_image
+                FROM delivery_notes
+                WHERE order_id = $1
+                ORDER BY delivery_at
                 `,
                 [id]
             );
@@ -232,7 +311,9 @@ ORDER BY delivery_at
             const delivery_notes = deliveryNotesResult.rows;
 
 
+            // =========================
             // החזרות
+            // =========================
 
             const returnsResult = await pool.query(
                 `
@@ -250,7 +331,9 @@ ORDER BY delivery_at
             const returns = returnsResult.rows;
 
 
+            // =========================
             // פריטי החזרה
+            // =========================
 
             const returnedItemsResult = await pool.query(
                 `
@@ -333,8 +416,9 @@ router.put(
                 customer_phone,
                 customer_address
             } = req.body;
+
             console.log("USER:", req.user);
-console.log("ORDER BODY:", req.body);
+            console.log("ORDER BODY:", req.body);
 
             const result = await pool.query(
                 `
@@ -344,8 +428,8 @@ console.log("ORDER BODY:", req.body);
                     customer_name = $2,
                     customer_phone = $3,
                     customer_address = $4
-                 WHERE id = $5
-    AND customer_id = $6
+                WHERE id = $5
+                AND customer_id = $6
                 RETURNING *
                 `,
                 [
@@ -353,8 +437,8 @@ console.log("ORDER BODY:", req.body);
                     customer_name,
                     customer_phone,
                     customer_address,
-                     id,
-        req.user.id
+                    id,
+                    req.user.id
                 ]
             );
 
@@ -389,10 +473,12 @@ router.patch(
         'driver'
     ),
 
-    // בדיקה שההרשאה עברה
     (req, res, next) => {
+
         console.log("🔥 STATUS MIDDLEWARE PASSED");
+
         next();
+
     },
 
     async (req, res) => {
@@ -417,10 +503,13 @@ router.patch(
             ];
 
             if (!validStatuses.includes(status)) {
+
                 return res
                     .status(400)
                     .send('Invalid status');
+
             }
+
 
             // =========================
             // נהג
@@ -429,9 +518,11 @@ router.patch(
             if (req.user.role === 'driver') {
 
                 if (status !== 'סופקה') {
+
                     return res
                         .status(403)
                         .send('נהג יכול לשנות רק לסטטוס סופקה');
+
                 }
 
                 const orderCheck = await pool.query(
@@ -460,22 +551,28 @@ router.patch(
                 });
 
                 if (orderCheck.rows.length === 0) {
+
                     return res
                         .status(404)
                         .send('Order not found');
+
                 }
 
                 if (
                     orderCheck.rows[0].status !== 'נשלחה' &&
                     orderCheck.rows[0].status !== 'בטיפול'
                 ) {
+
                     return res
                         .status(403)
                         .send(
                             'נהג יכול לסמן סופקה רק להזמנה שנשלחה או בטיפול'
                         );
+
                 }
+
             }
+
 
             // =========================
             // עדכון הסטטוס
@@ -505,9 +602,11 @@ router.patch(
             console.log("🔥 STATUS UPDATE RESULT:", result.rows);
 
             if (result.rows.length === 0) {
+
                 return res
                     .status(404)
                     .send('Order not found');
+
             }
 
             res.json(result.rows[0]);
@@ -519,9 +618,11 @@ router.patch(
             res
                 .status(500)
                 .send("Error updating status");
+
         }
     }
 );
+
 
 // =========================
 // הקצאת נהג להזמנה
@@ -539,10 +640,18 @@ router.patch(
             const { driver_id } = req.body;
 
             if (!driver_id) {
-                return res.status(400).send('Driver is required');
+
+                return res
+                    .status(400)
+                    .send('Driver is required');
+
             }
 
-            // בדיקה שהנהג קיים ושייך לאותה חברה
+
+            // =========================
+            // בדיקה שהנהג קיים
+            // ושייך לאותה חברה
+            // =========================
 
             const driverResult = await pool.query(
                 `
@@ -553,14 +662,24 @@ router.patch(
                 AND role = 'driver'
                 AND is_active = TRUE
                 `,
-                [driver_id, req.user.company]
+                [
+                    driver_id,
+                    req.user.company
+                ]
             );
 
             if (driverResult.rows.length === 0) {
-                return res.status(404).send('Driver not found');
+
+                return res
+                    .status(404)
+                    .send('Driver not found');
+
             }
 
+
+            // =========================
             // הקצאת הנהג להזמנה
+            // =========================
 
             const result = await pool.query(
                 `
@@ -578,7 +697,11 @@ router.patch(
             );
 
             if (result.rows.length === 0) {
-                return res.status(404).send('Order not found');
+
+                return res
+                    .status(404)
+                    .send('Order not found');
+
             }
 
             res.json(result.rows[0]);
@@ -609,17 +732,24 @@ router.patch(
 
             const result = await pool.query(
                 `
-                 UPDATE orders
-    SET is_active = FALSE
-    WHERE id = $1
-    AND customer_id = $2
-    RETURNING *
-    `,
-    [id, req.user.id]
+                UPDATE orders
+                SET is_active = FALSE
+                WHERE id = $1
+                AND customer_id = $2
+                RETURNING *
+                `,
+                [
+                    id,
+                    req.user.id
+                ]
             );
 
             if (result.rows.length === 0) {
-                return res.status(404).send('Order not found');
+
+                return res
+                    .status(404)
+                    .send('Order not found');
+
             }
 
             res.json(result.rows[0]);
