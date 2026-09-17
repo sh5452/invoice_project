@@ -1,55 +1,60 @@
 import { useState } from "react";
 import "./loginPage.css";
 import { useNavigate } from "react-router-dom";
-import axios from 'axios'
+import axios from "axios";
 
 function LoginPage() {
     const navigate = useNavigate();
 
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
-   
-    
-const handleLogin = async (e) => {
+    const [loading, setLoading] = useState(false);
 
-    e.preventDefault();
+    const handleLogin = async (e) => {
 
-    try {
+        e.preventDefault();
 
-        const response = await axios.post(
-            'https://invoice-project-3.onrender.com/login',
-            {
-                username,
-                password
-            }
-        );
+        if (loading) return;
 
-        console.log("LOGIN RESPONSE:", response.data);
+        try {
 
-        localStorage.setItem(
-            'token',
-            response.data.token
-        );
+            setLoading(true);
 
-        localStorage.setItem(
-            'user',
-            JSON.stringify(response.data.user)
-        );
+            const response = await axios.post(
+                'https://invoice-project-3.onrender.com/login',
+                {
+                    username,
+                    password
+                }
+            );
 
-        window.dispatchEvent(new Event("login"));
+            console.log("LOGIN RESPONSE:", response.data);
 
+            localStorage.setItem(
+                'token',
+                response.data.token
+            );
 
-        navigate('/home');
+            localStorage.setItem(
+                'user',
+                JSON.stringify(response.data.user)
+            );
 
-    } catch (err) {
+            window.dispatchEvent(new Event("login"));
 
-        console.error(err);
+            navigate('/home');
 
-        alert('שם משתמש או סיסמה שגויים');
+        } catch (err) {
 
-    }
-};
-    
+            console.error(err);
+
+            alert('שם משתמש או סיסמה שגויים');
+
+            setLoading(false);
+
+        }
+    };
+
 
     return (
 
@@ -63,18 +68,23 @@ const handleLogin = async (e) => {
                     type="text"
                     placeholder="שם משתמש"
                     value={username}
-                    onChange={(e)=>setUsername(e.target.value)}
+                    onChange={(e) => setUsername(e.target.value)}
+                    disabled={loading}
                 />
 
                 <input
                     type="password"
                     placeholder="סיסמה"
                     value={password}
-                    onChange={(e)=>setPassword(e.target.value)}
+                    onChange={(e) => setPassword(e.target.value)}
+                    disabled={loading}
                 />
 
-                <button type="submit">
-                    התחבר
+                <button
+                    type="submit"
+                    disabled={loading}
+                >
+                    {loading ? "מתחבר..." : "התחבר"}
                 </button>
 
             </form>

@@ -30,51 +30,63 @@ const [user, setUser] = useState(
 );
 
     // הפעלת טיימר לפי תוקף הטוקן
-    const startSessionTimer = (token) => {
+  const startSessionTimer = (token) => {
 
-        if (!token) {
-            return null;
+    if (!token) {
+        return null;
+    }
+
+    try {
+
+        const payload = JSON.parse(
+            atob(token.split(".")[1])
+        );
+
+        const expirationTime = payload.exp * 1000;
+
+        // התראה 30 שניות לפני פקיעת הטוקן
+        const warningTime = expirationTime - 30 * 1000;
+
+        const warningDelay = warningTime - Date.now();
+
+        console.log("WARNING DELAY:", warningDelay);
+
+        if (warningDelay <= 0) {
+
+            setShowSessionWarning(true);
+
+            const remainingTime = expirationTime - Date.now();
+
+            const logoutTimer = setTimeout(() => {
+                handleSessionLogout();
+            }, Math.max(remainingTime, 0));
+
+            return logoutTimer;
         }
 
-        try {
+        const timer = setTimeout(() => {
 
-            const payload = JSON.parse(
-                atob(token.split(".")[1])
-            );
+            setShowSessionWarning(true);
 
-            const expirationTime = payload.exp * 1000;
+            // אם המשתמש לא בוחר "הישאר מחובר"
+            // מתנתקים כשהטוקן פג
+            const remainingTime = expirationTime - Date.now();
 
-            // התראה 30 שניות לפני פקיעת הטוקן
-            const warningTime = expirationTime - 30 * 1000;
+            setTimeout(() => {
+                handleSessionLogout();
+            }, Math.max(remainingTime, 0));
 
-            const delay = warningTime - Date.now();
+        }, warningDelay);
 
-            console.log("DELAY:", delay);
+        return timer;
 
-            if (delay <= 0) {
+    } catch (error) {
 
-                setShowSessionWarning(true);
+        console.error("Invalid token:", error);
 
-                return null;
-            }
-
-            const timer = setTimeout(() => {
-
-                setShowSessionWarning(true);
-
-            }, delay);
-
-            return timer;
-
-        } catch (error) {
-
-            console.error("Invalid token:", error);
-
-            return null;
-        }
-    };
-
-
+        return null;
+    }
+};
     // התחברות / טעינת האפליקציה
     useEffect(() => {
 
