@@ -1,11 +1,10 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
 import api from '../services/api'
-import { products } from '../data/products'
 
 function CreateOrder(){
     const navigate = useNavigate()
-
+const [products, setProducts] = useState([]);
 const [items,setItems] = useState([
     {
         product_name:"",
@@ -23,6 +22,27 @@ const [order, setOrder] = useState({
     status: "חדשה"
 });
 
+useEffect(() => {
+
+    async function fetchProducts() {
+
+        try {
+
+            const response = await api.get('/products');
+
+            setProducts(response.data);
+
+        } catch (err) {
+
+            console.error("ERROR FETCHING PRODUCTS:", err);
+
+        }
+
+    }
+
+    fetchProducts();
+
+}, []);
 function addProduct(){
     setItems([
         ...items,
@@ -48,13 +68,12 @@ function handleProductChange(index, productName){
         product_name: selectedProduct.name,
         sku: selectedProduct.sku,
         price: selectedProduct.price,
-        quantity: selectedProduct.packSize,
-        packSize:selectedProduct.packSize
+        quantity: selectedProduct.pack_size,
+        packSize: selectedProduct.pack_size
     };
 
     setItems(updatedItems);
 }
-
 function createQuantityOptions(packSize){
 
     const quantities=[];
@@ -183,13 +202,13 @@ onChange={(e)=>handleProductChange(index,e.target.value)}
 <option value="">בחר מוצר</option>
 
 {
-products.map(product=>(
-<option 
-key={product.sku}
-value={product.name}
->
-{product.name}
-</option>
+products.map(product => (
+    <option
+        key={product.sku}
+        value={product.name}
+    >
+        {product.name}
+    </option>
 ))
 }
 
