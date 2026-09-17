@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react';
 import OrderCard from '../components/OrderCard';
 import api from '../services/api';
 import { Link } from 'react-router-dom';
+import Loading from '../components/Loading';
 
 function OrdersPage() {
 
     const [orders, setOrders] = useState([]);
+    const [loading, setLoading] = useState(true);
 
     const user = JSON.parse(localStorage.getItem('user'));
 
@@ -26,6 +28,10 @@ function OrdersPage() {
 
             console.error(err);
 
+        } finally {
+
+            setLoading(false);
+
         }
     }
 
@@ -37,21 +43,31 @@ function OrdersPage() {
 
             <h1>רשימת הזמנות</h1>
 
-            {
-                orders.map((order) => (
-                    <div key={order.id}>
-                        <OrderCard myOrder={order} />
-                    </div>
-                ))
-            }
+            {loading ? (
 
-            {canCreateOrder && (
-                <Link
-                    className="primary-button"
-                    to="/orders/new"
-                >
-                    הוסף הזמנה חדשה
-                </Link>
+                <Loading />
+
+            ) : (
+
+                <>
+                    {
+                        orders.map((order) => (
+                            <div key={order.id}>
+                                <OrderCard myOrder={order} />
+                            </div>
+                        ))
+                    }
+
+                    {canCreateOrder && (
+                        <Link
+                            className="primary-button"
+                            to="/orders/new"
+                        >
+                            הוסף הזמנה חדשה
+                        </Link>
+                    )}
+                </>
+
             )}
 
         </div>

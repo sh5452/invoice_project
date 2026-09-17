@@ -1,0 +1,43 @@
+.loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    min-height: 200px;
+
+    color: white;
+}
+
+.loading-logo {
+    width: 70px;
+    height: 70px;
+    object-fit: contain;
+
+    animation: loadingPulse 1.2s ease-in-out infinite;
+}
+
+.loading-container p {
+    margin-top: 12px;
+    font-size: 16px;
+}
+
+@keyframes loadingPulse {
+
+    0% {
+        opacity: 0.4;
+        transform: scale(0.95);
+    }
+
+    50% {
+        opacity: 1;
+        transform: scale(1.05);
+    }
+
+    100% {
+        opacity: 0.4;
+        transform: scale(0.95);
+    }
+
+}
+

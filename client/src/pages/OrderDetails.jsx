@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '../services/api';
 import { useParams, useNavigate } from 'react-router-dom'
 import './OrderDetails.css';
+import Loading from '../components/Loading';
 
 function OrderDetails() {
 
@@ -10,6 +11,7 @@ function OrderDetails() {
     const currentUser = JSON.parse(localStorage.getItem('user') || 'null');
 
     const [orderData, setOrderData] = useState(null);
+    const [loading, setLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
     const [drivers, setDrivers] = useState([]);
     const [selectedDriver, setSelectedDriver] = useState("");
@@ -75,6 +77,10 @@ function OrderDetails() {
         } catch (err) {
 
             console.error(err);
+
+        } finally {
+
+            setLoading(false);
 
         }
     }
@@ -294,8 +300,13 @@ function OrderDetails() {
     }
 
 
+    if (loading) {
+        return <Loading />;
+    }
+
+
     if (!orderData) {
-        return <p>טוען הזמנה...</p>;
+        return <p>לא ניתן לטעון את ההזמנה</p>;
     }
 
 

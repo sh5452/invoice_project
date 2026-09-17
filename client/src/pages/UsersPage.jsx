@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import api from '../services/api';
+import Loading from '../components/Loading';
 
 function UsersPage() {
 
     const [users, setUsers] = useState([]);
     const [editingUser, setEditingUser] = useState(null);
     const [openCompanies, setOpenCompanies] = useState({});
+    const [loading, setLoading] = useState(true);
 
     const currentUser = JSON.parse(
         localStorage.getItem('user') || 'null'
@@ -115,10 +117,12 @@ function UsersPage() {
                 const response = await api.get('/users');
 
                 setUsers(response.data);
+                setLoading(false);
 
             } catch (err) {
 
                 console.error(err);
+                setLoading(false);
 
             }
 
@@ -289,9 +293,11 @@ function UsersPage() {
                             >
 
                                 {isSuperAdmin && (
+
                                     <option value="company_admin">
                                         מנהל חברה
                                     </option>
+
                                 )}
 
                                 <option value="employee">
@@ -341,10 +347,12 @@ function UsersPage() {
                         </p>
 
                         {user.role === 'customer' && (
+
                             <p>
                                 חברת הלקוח:{' '}
                                 {user.customer_company || 'לא הוגדרה'}
                             </p>
+
                         )}
 
                         <button
@@ -388,78 +396,82 @@ function UsersPage() {
 
             <h1>ניהול משתמשים</h1>
 
-            {isSuperAdmin ? (
+            {loading ? (
 
-                <div>
-
-                    {companies.length === 0 ? (
-
-                        <p>
-                            עדיין לא נוספו חברות.
-                        </p>
-
-                    ) : (
-
-                        companies.map(company => {
-
-                            const companyUsers =
-                                getCompanyUsers(company);
-
-                            const isOpen =
-                                openCompanies[company];
-
-                            return (
-
-                                <div key={company}>
-
-                                    <button
-                                        className="company-button"
-                                        onClick={() =>
-                                            toggleCompany(company)
-                                        }
-                                    >
-
-                                        {isOpen ? '▼' : '▶'}
-
-                                        {' '}
-
-                                        {company}
-
-                                        {' '}
-
-                                        ({companyUsers.length})
-
-                                    </button>
-
-                                    {isOpen && (
-
-                                        <div>
-
-                                            {companyUsers.map(
-                                                renderUser
-                                            )}
-
-                                        </div>
-
-                                    )}
-
-                                </div>
-
-                            );
-
-                        })
-
-                    )}
-
-                </div>
+                <Loading />
 
             ) : (
 
-                <div>
+                isSuperAdmin ? (
 
-                    {users.map(renderUser)}
+                    <div>
 
-                </div>
+                        {companies.length === 0 ? (
+
+                            <p>
+                                עדיין לא נוספו חברות.
+                            </p>
+
+                        ) : (
+
+                            companies.map(company => {
+
+                                const companyUsers =
+                                    getCompanyUsers(company);
+
+                                const isOpen =
+                                    openCompanies[company];
+
+                                return (
+
+                                    <div key={company}>
+
+                                        <button
+                                            className="company-button"
+                                            onClick={() =>
+                                                toggleCompany(company)
+                                            }
+                                        >
+
+                                            {isOpen ? '▼' : '▶'}
+                                            {' '}
+                                            {company}
+                                            {' '}
+                                            ({companyUsers.length})
+
+                                        </button>
+
+                                        {isOpen && (
+
+                                            <div>
+
+                                                {companyUsers.map(
+                                                    renderUser
+                                                )}
+
+                                            </div>
+
+                                        )}
+
+                                    </div>
+
+                                );
+
+                            })
+
+                        )}
+
+                    </div>
+
+                ) : (
+
+                    <div>
+
+                        {users.map(renderUser)}
+
+                    </div>
+
+                )
 
             )}
 
