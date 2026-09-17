@@ -51,7 +51,7 @@ function Navbar() {
 
                 <span className="truck-icon">
 
-                    <img src="logo.png" />
+                   <img src="/logo.png" />
 
                 </span>
 
