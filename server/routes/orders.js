@@ -94,23 +94,33 @@ router.get(
             // סופר אדמין - כל ההזמנות
             // =========================
 
-            if (req.user.role === 'super_admin') {
+           if (req.user.role === 'super_admin') {
 
-                result = await pool.query(`
-                    SELECT
-                        orders.*,
-                        COALESCE(
-                            SUM(order_items.price * order_items.quantity),
-                            0
-                        ) AS total_price
-                    FROM orders
-                    LEFT JOIN order_items
-                        ON orders.id = order_items.order_id
-                    GROUP BY orders.id
-                    ORDER BY orders.id DESC
-                `);
+    result = await pool.query(`
+        SELECT
+            orders.*,
 
-            }
+            parent_company.id AS parent_company_id,
+            parent_company.name AS parent_company_name,
+
+            customer_company.id AS customer_company_id,
+            customer_company.name AS customer_company_name
+
+        FROM orders
+
+        LEFT JOIN users customer_user
+            ON customer_user.id = orders.customer_id
+
+        LEFT JOIN companies customer_company
+            ON customer_company.id = customer_user.customer_company_id
+
+        LEFT JOIN companies parent_company
+            ON parent_company.id = customer_company.parent_company_id
+
+        ORDER BY orders.id DESC
+    `);
+
+}
 
             // =========================
             // נהג - רק הזמנות שלו
