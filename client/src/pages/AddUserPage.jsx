@@ -94,72 +94,103 @@ function AddUserPage() {
     // הוספת חברה חדשה
     // =========================
 
-    const handleAddCompany = async (type) => {
+   const handleAddCompany = async (type) => {
 
-        if (!newCompanyName.trim()) {
+    if (!newCompanyName.trim()) {
 
-            alert('יש להזין שם חברה');
+        alert('יש להזין שם חברה');
 
-            return;
+        return;
+    }
+
+    try {
+
+        let isParentCompany = false;
+        let parentCompanyId = null;
+
+        // =========================
+        // הוספת חברה ראשית
+        // =========================
+
+        if (type === 'company') {
+
+            isParentCompany = true;
+            parentCompanyId = null;
+
         }
 
+        // =========================
+        // הוספת חברת לקוח
+        // =========================
 
-        try {
+        if (type === 'customerCompany') {
 
-            const response = await api.post(
-                '/companies',
-                {
-                    name: newCompanyName.trim()
-                }
-            );
+            isParentCompany = false;
 
+            parentCompanyId =
+                user.companyId;
 
-            const newCompany = response.data;
+            if (!parentCompanyId) {
 
+                alert(
+                    'יש לבחור חברה ראשית לפני הוספת חברת לקוח'
+                );
 
-            setCompanies(prev => [
+                return;
+            }
+        }
+
+        const response = await api.post(
+            '/companies',
+            {
+                name: newCompanyName.trim(),
+                isParentCompany,
+                parentCompanyId
+            }
+        );
+
+        const newCompany = response.data;
+
+        setCompanies(prev => [
+            ...prev,
+            newCompany
+        ]);
+
+        // אם זו החברה הראשית של המשתמש
+        if (type === 'company') {
+
+            setUser(prev => ({
                 ...prev,
-                newCompany
-            ]);
-
-
-            if (type === 'company') {
-
-                setUser(prev => ({
-                    ...prev,
-                    companyId: newCompany.id
-                }));
-
-            }
-
-
-            if (type === 'customerCompany') {
-
-                setUser(prev => ({
-                    ...prev,
-                    customerCompanyId: newCompany.id
-                }));
-
-            }
-
-
-            setNewCompanyName('');
-
-            setShowNewCompanyFor(null);
-
-
-        } catch (err) {
-
-            console.error(err);
-
-            alert(
-                err.response?.data ||
-                'שגיאה בהוספת החברה'
-            );
+                companyId: newCompany.id
+            }));
 
         }
 
-    };
+        // אם זו חברת הלקוח
+        if (type === 'customerCompany') {
+
+            setUser(prev => ({
+                ...prev,
+                customerCompanyId: newCompany.id
+            }));
+
+        }
+
+        setNewCompanyName('');
+        setShowNewCompanyFor(null);
+
+    } catch (err) {
+
+        console.error(err);
+
+        alert(
+            err.response?.data ||
+            'שגיאה בהוספת החברה'
+        );
+
+    }
+
+};
 
 
     // =========================

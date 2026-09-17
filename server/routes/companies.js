@@ -75,31 +75,101 @@ router.post(
     authenticateToken,
     authorizeRoles('super_admin', 'company_admin'),
     async (req, res) => {
-
         try {
 
-            const { name } = req.body;
+            const {
+                name,
+                isParentCompany,
+                parentCompanyId
+            } = req.body;
 
             if (!name || !name.trim()) {
-                return res.status(400).send('יש להזין שם חברה');
+                return res.status(400).send(
+                    'יש להזין שם חברה'
+                );
             }
 
             const companyName = name.trim();
 
+            // חברה ראשית
+            if (isParentCompany === true) {
+
+                const result = await pool.query(
+                    `
+                    INSERT INTO companies
+                    (
+                        name,
+                        is_parent_company,
+                        parent_company_id
+                    )
+                    VALUES ($1, TRUE, NULL)
+                    RETURNING
+                        id,
+                        name,
+                        created_at,
+                        is_active,
+                        is_parent_company,
+                        parent_company_id
+                    `,
+                    [companyName]
+                );
+
+                return res.status(201).json(
+                    result.rows[0]
+                );
+            }
+
+            // חברת לקוח
+            if (!parentCompanyId) {
+                return res.status(400).send(
+                    'יש לבחור חברה ראשית'
+                );
+            }
+
+            // מוודאים שהחברה שנבחרה היא באמת חברה ראשית
+            const parentResult = await pool.query(
+                `
+                SELECT id
+                FROM companies
+                WHERE id = $1
+                AND is_parent_company = TRUE
+                AND is_active = TRUE
+                `,
+                [parentCompanyId]
+            );
+
+            if (parentResult.rows.length === 0) {
+                return res.status(400).send(
+                    'החברה שנבחרה אינה חברה ראשית'
+                );
+            }
+
             const result = await pool.query(
                 `
-                INSERT INTO companies (name)
-                VALUES ($1)
+                INSERT INTO companies
+                (
+                    name,
+                    is_parent_company,
+                    parent_company_id
+                )
+                VALUES ($1, FALSE, $2)
                 RETURNING
                     id,
                     name,
                     created_at,
-                    is_active
+                    is_active,
+                    is_parent_company,
+                    parent_company_id
                 `,
-                [companyName]
+                [
+                    companyName,
+                    parentCompanyId
+                ]
             );
 
-            res.status(201).json(result.rows[0]);
+            res.status(201).json(
+                result.rows[0]
+            );
 
         } catch (err) {
 
@@ -109,17 +179,16 @@ router.post(
             );
 
             if (err.code === '23505') {
-                return res
-                    .status(400)
-                    .send('החברה כבר קיימת');
+                return res.status(400).send(
+                    'החברה כבר קיימת'
+                );
             }
 
-            res
-                .status(500)
-                .send('Error creating company');
+            res.status(500).send(
+                'Error creating company'
+            );
         }
     }
 );
-
 
 module.exports = router;
