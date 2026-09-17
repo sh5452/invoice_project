@@ -20,6 +20,8 @@ function OrderDetails() {
     const [deliveryNoteImages, setDeliveryNoteImages] = useState({});
     const [editingDeliveryNote, setEditingDeliveryNote] = useState(null);
 
+    const [actionLoading, setActionLoading] = useState(false);
+
 
     useEffect(() => {
         console.log("LOADING DRIVERS");
@@ -112,6 +114,12 @@ function OrderDetails() {
             return;
         }
 
+        if (actionLoading) {
+            return;
+        }
+
+        setActionLoading(true);
+
         try {
 
             const res = await api.patch(
@@ -135,6 +143,10 @@ function OrderDetails() {
 
             console.error(err);
             alert("שגיאה בשיוך הנהג");
+
+        } finally {
+
+            setActionLoading(false);
 
         }
     }
@@ -178,6 +190,12 @@ function OrderDetails() {
             return;
         }
 
+        if (actionLoading) {
+            return;
+        }
+
+        setActionLoading(true);
+
         try {
 
             const res = await api.patch(
@@ -196,11 +214,21 @@ function OrderDetails() {
             console.error(err);
             alert("שגיאה בהשבתת ההזמנה");
 
+        } finally {
+
+            setActionLoading(false);
+
         }
     }
 
 
     async function saveOrder() {
+
+        if (actionLoading) {
+            return;
+        }
+
+        setActionLoading(true);
 
         try {
 
@@ -243,11 +271,21 @@ function OrderDetails() {
 
             alert("שגיאה בעדכון ההזמנה");
 
+        } finally {
+
+            setActionLoading(false);
+
         }
     }
 
 
     async function saveDeliveryNote() {
+
+        if (actionLoading) {
+            return;
+        }
+
+        setActionLoading(true);
 
         try {
 
@@ -296,6 +334,10 @@ function OrderDetails() {
 
             alert("שגיאה בעדכון תעודת המשלוח");
 
+        } finally {
+
+            setActionLoading(false);
+
         }
     }
 
@@ -311,6 +353,12 @@ function OrderDetails() {
 
 
     async function saveStatus() {
+
+        if (actionLoading) {
+            return;
+        }
+
+        setActionLoading(true);
 
         try {
 
@@ -333,6 +381,10 @@ function OrderDetails() {
 
             console.error(err);
             alert("שגיאה בעדכון סטטוס");
+
+        } finally {
+
+            setActionLoading(false);
 
         }
     }
@@ -363,16 +415,23 @@ function OrderDetails() {
                     {currentUser?.role === 'customer' && (
                         <>
 
-                            <button onClick={() => setIsEditing(true)}>
+                            <button
+                                onClick={() => setIsEditing(true)}
+                                disabled={actionLoading}
+                            >
                                 עריכה
                             </button>
 
-                            <button onClick={deactivateOrder}>
+                            <button
+                                onClick={deactivateOrder}
+                                disabled={actionLoading}
+                            >
                                 השבת הזמנה
                             </button>
 
                             <button
                                 onClick={() => navigate(`/orders/${id}/return`)}
+                                disabled={actionLoading}
                             >
                                 הוספת החזרה
                             </button>
@@ -386,6 +445,7 @@ function OrderDetails() {
                     {currentUser?.role === 'driver' && (
                         <button
                             onClick={() => navigate(`/delivery-notes/new/${id}`)}
+                            disabled={actionLoading}
                         >
                             הוספת תעודת משלוח
                         </button>
@@ -398,8 +458,13 @@ function OrderDetails() {
             {isEditing && (
                 <>
 
-                    <button onClick={saveOrder}>
-                        שמור שינויים
+                    <button
+                        onClick={saveOrder}
+                        disabled={actionLoading}
+                    >
+                        {actionLoading
+                            ? "שומר..."
+                            : "שמור שינויים"}
                     </button>
 
                     <button
@@ -407,6 +472,7 @@ function OrderDetails() {
                             setIsEditing(false);
                             loadOrder();
                         }}
+                        disabled={actionLoading}
                     >
                         ביטול
                     </button>
@@ -434,6 +500,7 @@ function OrderDetails() {
                                     e.target.value
                                 )
                             }
+                            disabled={actionLoading}
                         />
                     </p>
 
@@ -449,6 +516,7 @@ function OrderDetails() {
                                     e.target.value
                                 )
                             }
+                            disabled={actionLoading}
                         />
                     </p>
 
@@ -464,6 +532,7 @@ function OrderDetails() {
                                     e.target.value
                                 )
                             }
+                            disabled={actionLoading}
                         />
                     </p>
 
@@ -507,6 +576,7 @@ function OrderDetails() {
                                 e.target.value
                             )
                         }
+                        disabled={actionLoading}
                     />
                 </p>
 
@@ -537,7 +607,10 @@ function OrderDetails() {
                     {(currentUser?.role === 'company_admin' ||
                       currentUser?.role === 'employee') && (
 
-                        <button onClick={() => setIsEditingStatus(true)}>
+                        <button
+                            onClick={() => setIsEditingStatus(true)}
+                            disabled={actionLoading}
+                        >
                             שינוי סטטוס
                         </button>
 
@@ -555,6 +628,7 @@ function OrderDetails() {
                                 setSelectedStatus('סופקה');
                                 setIsEditingStatus(true);
                             }}
+                            disabled={actionLoading}
                         >
                             סימון כסופקה
                         </button>
@@ -570,6 +644,7 @@ function OrderDetails() {
                     <select
                         value={selectedStatus}
                         onChange={(e) => setSelectedStatus(e.target.value)}
+                        disabled={actionLoading}
                     >
 
                         {/* מנהל ועובד חברה */}
@@ -596,11 +671,19 @@ function OrderDetails() {
                     </select>
 
 
-                    <button onClick={saveStatus}>
-                        שמור
+                    <button
+                        onClick={saveStatus}
+                        disabled={actionLoading}
+                    >
+                        {actionLoading
+                            ? "שומר..."
+                            : "שמור"}
                     </button>
 
-                    <button onClick={cancelStatusEdit}>
+                    <button
+                        onClick={cancelStatusEdit}
+                        disabled={actionLoading}
+                    >
                         ביטול
                     </button>
 
@@ -620,6 +703,7 @@ function OrderDetails() {
                     <select
                         value={selectedDriver}
                         onChange={(e) => setSelectedDriver(e.target.value)}
+                        disabled={actionLoading}
                     >
 
                         <option value="">
@@ -640,8 +724,13 @@ function OrderDetails() {
                     </select>
 
 
-                    <button onClick={assignDriver}>
-                        שייך נהג
+                    <button
+                        onClick={assignDriver}
+                        disabled={actionLoading}
+                    >
+                        {actionLoading
+                            ? "משייך..."
+                            : "שייך נהג"}
                     </button>
 
                 </>
@@ -683,6 +772,7 @@ function OrderDetails() {
                                             e.target.value
                                         )
                                     }
+                                    disabled={actionLoading}
                                 />
 
                             </label>
@@ -701,6 +791,7 @@ function OrderDetails() {
                                             e.target.value
                                         )
                                     }
+                                    disabled={actionLoading}
                                 />
 
                             </label>
@@ -777,6 +868,7 @@ function OrderDetails() {
                                         });
 
                                     }}
+                                    disabled={actionLoading}
                                 >
                                     עריכה
                                 </button>
@@ -821,6 +913,7 @@ function OrderDetails() {
                                                         e.target.value
                                                 })
                                             }
+                                            disabled={actionLoading}
                                         />
 
                                     </div>
@@ -844,6 +937,7 @@ function OrderDetails() {
                                                         e.target.value
                                                 })
                                             }
+                                            disabled={actionLoading}
                                         />
 
                                     </div>
@@ -865,6 +959,7 @@ function OrderDetails() {
                                                     notes: e.target.value
                                                 })
                                             }
+                                            disabled={actionLoading}
                                         />
 
                                     </div>
@@ -887,6 +982,7 @@ function OrderDetails() {
                                                         e.target.files[0]
                                                 })
                                             }
+                                            disabled={actionLoading}
                                         />
 
                                     </div>
@@ -895,8 +991,11 @@ function OrderDetails() {
                                     <button
                                         type="button"
                                         onClick={saveDeliveryNote}
+                                        disabled={actionLoading}
                                     >
-                                        שמור שינויים
+                                        {actionLoading
+                                            ? "שומר..."
+                                            : "שמור שינויים"}
                                     </button>
 
 
@@ -905,6 +1004,7 @@ function OrderDetails() {
                                         onClick={() =>
                                             setEditingDeliveryNote(null)
                                         }
+                                        disabled={actionLoading}
                                     >
                                         ביטול
                                     </button>
@@ -976,6 +1076,9 @@ function OrderDetails() {
             <p>
                 מצב: {orderData.order.is_active ? "פעילה" : "מושבתת"}
             </p>
+
+
+            {actionLoading && <Loading />}
 
         </div>
     );

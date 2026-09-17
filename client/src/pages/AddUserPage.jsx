@@ -3,6 +3,7 @@ import './AddUserPage.css';
 import api from '../services/api';
 import { useNavigate } from 'react-router-dom';
 import './UserPage.css';
+import Loading from '../components/Loading';
 
 
 function AddUserPage() {
@@ -24,6 +25,15 @@ function AddUserPage() {
 
     const [newCompanyName, setNewCompanyName] =
         useState('');
+
+    const [loadingCompanies, setLoadingCompanies] =
+        useState(true);
+
+    const [addingCompany, setAddingCompany] =
+        useState(false);
+
+    const [submitting, setSubmitting] =
+        useState(false);
 
 
     const [user, setUser] = useState({
@@ -60,6 +70,10 @@ function AddUserPage() {
                     'שגיאה בטעינת החברות'
                 );
 
+            } finally {
+
+                setLoadingCompanies(false);
+
             }
 
         };
@@ -94,103 +108,115 @@ function AddUserPage() {
     // הוספת חברה חדשה
     // =========================
 
-   const handleAddCompany = async (type) => {
+    const handleAddCompany = async (type) => {
 
-    if (!newCompanyName.trim()) {
+        if (!newCompanyName.trim()) {
 
-        alert('יש להזין שם חברה');
+            alert('יש להזין שם חברה');
 
-        return;
-    }
-
-    try {
-
-        let isParentCompany = false;
-        let parentCompanyId = null;
-
-        // =========================
-        // הוספת חברה ראשית
-        // =========================
-
-        if (type === 'company') {
-
-            isParentCompany = true;
-            parentCompanyId = null;
-
+            return;
         }
 
-        // =========================
-        // הוספת חברת לקוח
-        // =========================
+        if (addingCompany) {
+            return;
+        }
 
-        if (type === 'customerCompany') {
+        setAddingCompany(true);
 
-            isParentCompany = false;
+        try {
 
-            parentCompanyId =
-                user.companyId;
+            let isParentCompany = false;
+            let parentCompanyId = null;
 
-            if (!parentCompanyId) {
+            // =========================
+            // הוספת חברה ראשית
+            // =========================
 
-                alert(
-                    'יש לבחור חברה ראשית לפני הוספת חברת לקוח'
-                );
+            if (type === 'company') {
 
-                return;
+                isParentCompany = true;
+                parentCompanyId = null;
+
             }
-        }
 
-        const response = await api.post(
-            '/companies',
-            {
-                name: newCompanyName.trim(),
-                isParentCompany,
-                parentCompanyId
+            // =========================
+            // הוספת חברת לקוח
+            // =========================
+
+            if (type === 'customerCompany') {
+
+                isParentCompany = false;
+
+                parentCompanyId =
+                    user.companyId;
+
+                if (!parentCompanyId) {
+
+                    alert(
+                        'יש לבחור חברה ראשית לפני הוספת חברת לקוח'
+                    );
+
+                    setAddingCompany(false);
+
+                    return;
+                }
             }
-        );
 
-        const newCompany = response.data;
+            const response = await api.post(
+                '/companies',
+                {
+                    name: newCompanyName.trim(),
+                    isParentCompany,
+                    parentCompanyId
+                }
+            );
 
-        setCompanies(prev => [
-            ...prev,
-            newCompany
-        ]);
+            const newCompany = response.data;
 
-        // אם זו החברה הראשית של המשתמש
-        if (type === 'company') {
-
-            setUser(prev => ({
+            setCompanies(prev => [
                 ...prev,
-                companyId: newCompany.id
-            }));
+                newCompany
+            ]);
+
+            // אם זו החברה הראשית של המשתמש
+            if (type === 'company') {
+
+                setUser(prev => ({
+                    ...prev,
+                    companyId: newCompany.id
+                }));
+
+            }
+
+            // אם זו חברת הלקוח
+            if (type === 'customerCompany') {
+
+                setUser(prev => ({
+                    ...prev,
+                    customerCompanyId: newCompany.id
+                }));
+
+            }
+
+            setNewCompanyName('');
+            setShowNewCompanyFor(null);
+
+        } catch (err) {
+
+            console.error(err);
+
+            alert(
+                err.response?.data ||
+                'שגיאה בהוספת החברה'
+            );
+
+        } finally {
+
+            setAddingCompany(false);
 
         }
 
-        // אם זו חברת הלקוח
-        if (type === 'customerCompany') {
-
-            setUser(prev => ({
-                ...prev,
-                customerCompanyId: newCompany.id
-            }));
-
-        }
-
-        setNewCompanyName('');
-        setShowNewCompanyFor(null);
-
-    } catch (err) {
-
-        console.error(err);
-
-        alert(
-            err.response?.data ||
-            'שגיאה בהוספת החברה'
-        );
-
-    }
-
-};
+    };
 
 
     // =========================
@@ -200,6 +226,12 @@ function AddUserPage() {
     const handleSubmit = async (e) => {
 
         e.preventDefault();
+
+        if (submitting) {
+            return;
+        }
+
+        setSubmitting(true);
 
         try {
 
@@ -241,9 +273,20 @@ function AddUserPage() {
 
             alert(message);
 
+            setSubmitting(false);
+
         }
 
     };
+
+
+    // =========================
+    // טעינת חברות
+    // =========================
+
+    if (loadingCompanies) {
+        return <Loading />;
+    }
 
 
     return (
@@ -404,6 +447,7 @@ function AddUserPage() {
                                 setNewCompanyName('');
 
                             }}
+                            disabled={addingCompany}
                         >
                             +
                         </button>
@@ -424,6 +468,7 @@ function AddUserPage() {
                                         e.target.value
                                     )
                                 }
+                                disabled={addingCompany}
                             />
 
                             <button
@@ -431,8 +476,11 @@ function AddUserPage() {
                                 onClick={() =>
                                     handleAddCompany('company')
                                 }
+                                disabled={addingCompany}
                             >
-                                הוסף חברה
+                                {addingCompany
+                                    ? 'מוסיף...'
+                                    : 'הוסף חברה'}
                             </button>
 
                         </div>
@@ -500,6 +548,7 @@ function AddUserPage() {
                                     setNewCompanyName('');
 
                                 }}
+                                disabled={addingCompany}
                             >
                                 +
                             </button>
@@ -521,6 +570,7 @@ function AddUserPage() {
                                             e.target.value
                                         )
                                     }
+                                    disabled={addingCompany}
                                 />
 
                                 <button
@@ -530,8 +580,11 @@ function AddUserPage() {
                                             'customerCompany'
                                         )
                                     }
+                                    disabled={addingCompany}
                                 >
-                                    הוסף חברה
+                                    {addingCompany
+                                        ? 'מוסיף...'
+                                        : 'הוסף חברה'}
                                 </button>
 
                             </div>
@@ -592,12 +645,22 @@ function AddUserPage() {
                 </div>
 
 
-                <button type="submit">
-                    הוסף משתמש
+                <button
+                    type="submit"
+                    disabled={submitting}
+                >
+                    {submitting
+                        ? 'יוצר משתמש...'
+                        : 'הוסף משתמש'}
                 </button>
 
 
             </form>
+
+
+            {/* טעינה בזמן יצירת המשתמש */}
+
+            {submitting && <Loading />}
 
         </div>
 

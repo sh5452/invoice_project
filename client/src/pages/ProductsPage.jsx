@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import api from '../services/api';
+import Loading from '../components/Loading';
 import './ProductsPage.css';
 
 function ProductsPage() {
@@ -23,6 +24,12 @@ function ProductsPage() {
     const [showForm, setShowForm] =
         useState(false);
 
+    const [loadingCompanies, setLoadingCompanies] =
+        useState(isSuperAdmin);
+
+    const [loadingProducts, setLoadingProducts] =
+        useState(true);
+
     const [productForm, setProductForm] = useState({
         sku: '',
         name: '',
@@ -45,8 +52,8 @@ function ProductsPage() {
 
             try {
 
-               const response =
-    await api.get('/companies?parent_only=true');
+                const response =
+                    await api.get('/companies?parent_only=true');
 
                 setCompanies(
                     response.data.filter(
@@ -63,6 +70,11 @@ function ProductsPage() {
                     err.response?.data ||
                     'שגיאה בטעינת החברות'
                 );
+
+            } finally {
+
+                setLoadingCompanies(false);
+
             }
         };
 
@@ -81,6 +93,7 @@ function ProductsPage() {
 
             if (!selectedCompanyId) {
                 setProducts([]);
+                setLoadingProducts(false);
                 return;
             }
 
@@ -96,6 +109,8 @@ function ProductsPage() {
 
 
     async function fetchProducts(companyId = '') {
+
+        setLoadingProducts(true);
 
         try {
 
@@ -118,6 +133,11 @@ function ProductsPage() {
                 err.response?.data ||
                 'שגיאה בטעינת המוצרים'
             );
+
+        } finally {
+
+            setLoadingProducts(false);
+
         }
     }
 
@@ -345,6 +365,15 @@ function ProductsPage() {
     }
 
 
+    // ========================================
+    // טעינת חברות
+    // ========================================
+
+    if (loadingCompanies) {
+        return <Loading />;
+    }
+
+
     return (
         <div className="products-page">
 
@@ -556,7 +585,11 @@ function ProductsPage() {
                 רשימת מוצרים
             ======================================== */}
 
-            {isSuperAdmin &&
+            {loadingProducts ? (
+
+                <Loading />
+
+            ) : isSuperAdmin &&
                 !selectedCompanyId ? (
 
                 <p className="products-message">

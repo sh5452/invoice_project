@@ -30,7 +30,119 @@ router.post(
             } = req.body;
 
 
+            // =========================
+            // בדיקות בסיסיות
+            // =========================
+
+            if (!order_id) {
+                return res.status(400).send('Order is required');
+            }
+
+            if (!reason || !reason.trim()) {
+                return res.status(400).send('Return reason is required');
+            }
+
+            if (!Array.isArray(items) || items.length === 0) {
+                return res.status(400).send('Return items are required');
+            }
+
+
+            // =========================
+            // בדיקה שההזמנה שייכת ללקוח
+            // =========================
+
+            const orderResult = await pool.query(
+                `
+                SELECT
+                    id,
+                    customer_id
+                FROM orders
+                WHERE id = $1
+                AND customer_id = $2
+                `,
+                [
+                    order_id,
+                    req.user.id
+                ]
+            );
+
+
+            if (orderResult.rows.length === 0) {
+
+                return res
+                    .status(404)
+                    .send('Order not found');
+
+            }
+
+
+            // =========================
+            // בדיקה שכל הפריטים
+            // שייכים להזמנה הזאת
+            // =========================
+
+            for (const item of items) {
+
+                const itemResult = await pool.query(
+                    `
+                    SELECT
+                        id,
+                        quantity
+                    FROM order_items
+                    WHERE id = $1
+                    AND order_id = $2
+                    `,
+                    [
+                        item.order_item_id,
+                        order_id
+                    ]
+                );
+
+
+                if (itemResult.rows.length === 0) {
+
+                    return res
+                        .status(400)
+                        .send('Invalid order item');
+
+                }
+
+
+                const originalQuantity =
+                    Number(itemResult.rows[0].quantity);
+
+                const returnedQuantity =
+                    Number(item.quantity_returned);
+
+
+                if (
+                    !Number.isInteger(returnedQuantity) ||
+                    returnedQuantity <= 0
+                ) {
+
+                    return res
+                        .status(400)
+                        .send('Invalid return quantity');
+
+                }
+
+
+                if (returnedQuantity > originalQuantity) {
+
+                    return res
+                        .status(400)
+                        .send(
+                            'Returned quantity cannot exceed ordered quantity'
+                        );
+
+                }
+
+            }
+
+
+            // =========================
             // יצירת ההחזרה
+            // =========================
 
             const returnResult = await pool.query(
                 `
@@ -44,14 +156,18 @@ router.post(
                 `,
                 [
                     order_id,
-                    reason
+                    reason.trim()
                 ]
             );
 
-            const return_id = returnResult.rows[0].id;
+
+            const return_id =
+                returnResult.rows[0].id;
 
 
+            // =========================
             // שמירת פריטי ההחזרה
+            // =========================
 
             for (const item of items) {
 
@@ -75,15 +191,23 @@ router.post(
             }
 
 
+            // =========================
+            // תשובה
+            // =========================
+
             res.json({
                 return: returnResult.rows[0],
                 items
             });
 
+
         } catch (err) {
 
             console.error(err);
-            res.status(500).send('ERROR creating return');
+
+            res.status(500).send(
+                'ERROR creating return'
+            );
 
         }
     }
@@ -108,6 +232,39 @@ router.post(
                 quantity_returned
             } = req.body;
 
+
+            // =========================
+            // בדיקה שההחזרה שייכת ללקוח
+            // =========================
+
+            const returnResult = await pool.query(
+                `
+                SELECT
+                    returns.id
+                FROM returns
+
+                JOIN orders
+                    ON orders.id = returns.order_id
+
+                WHERE returns.id = $1
+                AND orders.customer_id = $2
+                `,
+                [
+                    return_id,
+                    req.user.id
+                ]
+            );
+
+
+            if (returnResult.rows.length === 0) {
+
+                return res
+                    .status(404)
+                    .send('Return not found');
+
+            }
+
+
             const result = await pool.query(
                 `
                 INSERT INTO return_items
@@ -126,12 +283,17 @@ router.post(
                 ]
             );
 
+
             res.json(result.rows[0]);
+
 
         } catch (err) {
 
             console.error(err);
-            res.status(500).send('ERROR creating return item');
+
+            res.status(500).send(
+                'ERROR creating return item'
+            );
 
         }
     }

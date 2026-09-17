@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../services/api'
+import Loading from '../components/Loading'
 import './ReturnOrder.css'
+
 function ReturnOrder() {
 
     const { id } = useParams()
@@ -10,23 +12,31 @@ function ReturnOrder() {
     const [orderData, setOrderData] = useState(null)
     const [selectedItems, setSelectedItems] = useState({})
     const [reason, setReason] = useState("")
+    const [loading, setLoading] = useState(true)
+    const [submitting, setSubmitting] = useState(false)
 
     useEffect(() => {
         loadOrder()
     }, [])
 
     async function loadOrder() {
+
         try {
 
             const res = await api.get(`/orders/${id}`)
+
             console.log("RETURN PAGE:", res.data)
-console.log("RETURN PAGE ITEMS:", res.data.items)
+            console.log("RETURN PAGE ITEMS:", res.data.items)
 
             setOrderData(res.data)
 
         } catch (err) {
 
             console.error(err)
+
+        } finally {
+
+            setLoading(false)
 
         }
     }
@@ -66,60 +76,74 @@ console.log("RETURN PAGE ITEMS:", res.data.items)
 
     }
 
-  async function handleSubmit(e) {
+    async function handleSubmit(e) {
 
-    e.preventDefault()
+        e.preventDefault()
 
-    const returnedItems = Object.entries(selectedItems).map(
-        ([order_item_id, data]) => ({
-            order_item_id: Number(order_item_id),
-            quantity_returned: data.quantity
-        })
-    )
+        if (submitting) {
+            return
+        }
 
-    if (returnedItems.length === 0) {
+        const returnedItems = Object.entries(selectedItems).map(
+            ([order_item_id, data]) => ({
+                order_item_id: Number(order_item_id),
+                quantity_returned: data.quantity
+            })
+        )
 
-        alert("יש לבחור לפחות מוצר אחד להחזרה")
-        return
+        if (returnedItems.length === 0) {
 
+            alert("יש לבחור לפחות מוצר אחד להחזרה")
+            return
+
+        }
+
+        if (!reason.trim()) {
+
+            alert("יש להזין סיבת החזרה")
+            return
+
+        }
+
+        try {
+
+            setSubmitting(true)
+
+            console.log("SENDING RETURN:", {
+                order_id: Number(id),
+                reason,
+                items: returnedItems
+            })
+
+            await api.post('/returns', {
+                order_id: Number(id),
+                reason,
+                items: returnedItems
+            })
+
+            alert("ההחזרה נשמרה בהצלחה")
+
+            navigate(`/orders/${id}`)
+
+        } catch (err) {
+
+            console.error(err)
+            alert("שגיאה ביצירת ההחזרה")
+
+            setSubmitting(false)
+
+        }
     }
 
-    if (!reason.trim()) {
+    if (loading) {
 
-        alert("יש להזין סיבת החזרה")
-        return
-
-    }
-
-    try {
-
-        console.log("SENDING RETURN:", {
-            order_id: Number(id),
-            reason,
-            items: returnedItems
-        })
-
-        await api.post('/returns', {
-            order_id: Number(id),
-            reason,
-            items: returnedItems
-        })
-
-        alert("ההחזרה נשמרה בהצלחה")
-
-        navigate(`/orders/${id}`)
-
-    } catch (err) {
-
-        console.error(err)
-        alert("שגיאה ביצירת ההחזרה")
+        return <Loading />
 
     }
-}
 
     if (!orderData) {
 
-        return <p>טוען הזמנה...</p>
+        return <p>לא ניתן לטעון את ההזמנה</p>
 
     }
 
@@ -136,95 +160,109 @@ console.log("RETURN PAGE ITEMS:", res.data.items)
             <h3>בחר את המוצרים שהוחזרו:</h3>
 
             <form onSubmit={handleSubmit}>
-{orderData.items.map(item => (
 
-    <div key={item.id}>
+                {orderData.items.map(item => (
 
-        <label>
+                    <div key={item.id}>
 
-            <input
-                type="checkbox"
-                checked={!!selectedItems[item.id]}
-                onChange={() => toggleItem(item.id)}
-            />
+                        <label>
 
-            <span className="return-product-name">
-                {item.product_name}
-            </span>
+                            <input
+                                type="checkbox"
+                                checked={!!selectedItems[item.id]}
+                                onChange={() => toggleItem(item.id)}
+                                disabled={submitting}
+                            />
 
-            {" | "}
+                            <span className="return-product-name">
+                                {item.product_name}
+                            </span>
 
-            <span className="return-sku">
-                מק"ט: {item.sku}
-            </span>
+                            {" | "}
 
-            {" | "}
+                            <span className="return-sku">
+                                מק"ט: {item.sku}
+                            </span>
 
-            <span className="return-quantity">
-                הוזמן: {item.quantity}
-            </span>
+                            {" | "}
 
-        </label>
+                            <span className="return-quantity">
+                                הוזמן: {item.quantity}
+                            </span>
 
-        {selectedItems[item.id] && (
+                        </label>
 
-            <select
-                value={selectedItems[item.id].quantity}
-                onChange={(e) =>
-                    changeQuantity(
-                        item.id,
-                        e.target.value
-                    )
-                }
-            >
+                        {selectedItems[item.id] && (
 
-                {Array.from(
-                    { length: item.quantity },
-                    (_, index) => index + 1
-                ).map(quantity => (
+                            <select
+                                value={selectedItems[item.id].quantity}
+                                onChange={(e) =>
+                                    changeQuantity(
+                                        item.id,
+                                        e.target.value
+                                    )
+                                }
+                                disabled={submitting}
+                            >
 
-                    <option
-                        key={quantity}
-                        value={quantity}
-                    >
-                        {quantity}
-                    </option>
+                                {Array.from(
+                                    { length: item.quantity },
+                                    (_, index) => index + 1
+                                ).map(quantity => (
+
+                                    <option
+                                        key={quantity}
+                                        value={quantity}
+                                    >
+                                        {quantity}
+                                    </option>
+
+                                ))}
+
+                            </select>
+
+                        )}
+
+                    </div>
 
                 ))}
 
-            </select>
-
-        )}
-
-    </div>
-
-))}
-
                 <div>
 
-                   <label className="return-reason">
-    סיבת ההחזרה:
-</label>
+                    <label className="return-reason">
+                        סיבת ההחזרה:
+                    </label>
+
                     <textarea
                         value={reason}
                         onChange={(e) => setReason(e.target.value)}
                         placeholder="כתוב את סיבת ההחזרה"
+                        disabled={submitting}
                     />
 
                 </div>
 
-                <button type="submit">
-                    שליחת החזרה
+                <button
+                    type="submit"
+                    disabled={submitting}
+                >
+                    {submitting
+                        ? "שומר..."
+                        : "שליחת החזרה"
+                    }
                 </button>
 
                 <button
                     type="button"
                     onClick={() => navigate(`/orders/${id}`)}
+                    disabled={submitting}
                 >
                     ביטול
                 </button>
 
             </form>
+
+            {submitting && <Loading />}
 
         </div>
 
