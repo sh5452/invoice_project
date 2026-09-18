@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../services/api'
 import Loading from '../components/Loading'
+import './CreateOrder.css'
 
 function CreateOrder() {
 
@@ -322,7 +323,7 @@ function CreateOrder() {
         מחיר ליחידה:
     </label>
 
-    <input
+    <input className='price_item'
         type="number"
         min="0"
         step="0.01"
