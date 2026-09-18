@@ -317,10 +317,30 @@ function CreateOrder() {
                             מק"ט: {item.sku}
                         </p>
 
+<div>
+    <label>
+        מחיר ליחידה:
+    </label>
 
-                        <p>
-                            מחיר ליחידה: {item.price} ₪
-                        </p>
+    <input
+        type="number"
+        min="0"
+        step="0.01"
+        value={item.price}
+        onChange={(e) => {
+
+            const updatedItems = [...items];
+
+            updatedItems[index].price =
+                e.target.value;
+
+            setItems(updatedItems);
+
+        }}
+    />
+
+    {" "}₪
+</div>
 
 
                         <p>
