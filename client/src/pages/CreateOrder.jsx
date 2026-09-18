@@ -318,12 +318,12 @@ function CreateOrder() {
                             מק"ט: {item.sku}
                         </p>
 
-<div>
-    <label>
+<div className='price_item'>
+    <label >
         מחיר ליחידה:
     </label>
 
-    <input className='price_item'
+    <input 
         type="number"
         min="0"
         step="0.01"
